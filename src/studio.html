@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Story Studio</title>
+    <meta name="description" content="Validate, edit and preview a local chat-story project." />
+    <meta name="theme-color" content="#0f172a" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="./engine/assets/chat.svg" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body class="min-h-dvh bg-chat-950 text-ink-100 antialiased">
+    <a href="#studio-main" class="sr-only focus:not-sr-only focus:absolute focus:m-2 focus:rounded focus:bg-tick-400 focus:p-2 focus:font-bold focus:text-chat-950">Skip to content</a>
+    <main id="studio-main" class="mx-auto max-w-5xl px-4 py-6 outline-none sm:px-6">
+      <header class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p><a href="./index.html" class="text-sm font-semibold text-tick-400 underline">← Back to the game</a></p>
+          <h1 class="mt-2 text-3xl font-bold">Story Studio</h1>
+          <p class="mt-2 max-w-prose text-sm text-ink-300">A local-only workbench for story files. Load a story folder, edit JSON, validate it, download the edited file, and open a phone preview. The browser cannot write changes back into your source folder.</p>
+        </div>
+        <p><a href="../STORY_GUIDE.md" class="inline-flex min-h-11 items-center rounded-full border border-out-500 px-5 py-2 text-sm font-semibold text-tick-400">Story authoring guide</a></p>
+      </header>
+
+      <section aria-labelledby="load-heading" class="mt-6 rounded-2xl border border-chat-700 bg-chat-800 p-4 sm:p-5">
+        <h2 id="load-heading" class="text-lg font-bold">1. Load story files</h2>
+        <p class="mt-2 text-sm text-ink-300">Choose the <code>src/story/</code> folder in a browser that supports folder selection, or begin with the bundled sample. Files stay in this browser tab.</p>
+        <div class="mt-3 flex flex-wrap items-center gap-3">
+          <label for="folder-input" class="text-sm font-semibold">Story folder</label>
+          <input id="folder-input" type="file" multiple webkitdirectory directory aria-describedby="folder-note" class="block min-h-11 max-w-full text-sm text-ink-100 file:mr-3 file:min-h-11 file:rounded-full file:border-0 file:bg-out-600 file:px-4 file:font-bold file:text-white" />
+          <button id="bundled-load" type="button" class="inline-flex min-h-11 items-center rounded-full border border-out-500 px-5 py-2 text-sm font-semibold text-tick-400">Load bundled sample</button>
+        </div>
+        <p id="folder-note" class="mt-2 text-xs text-ink-300">For the folder picker, select <code>src/story</code> itself so character, location and asset paths remain intact.</p>
+        <p id="studio-status" role="status" aria-live="polite" class="mt-2 text-sm text-ink-300"></p>
+      </section>
+
+      <div class="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.8fr)]">
+        <section aria-labelledby="edit-heading" class="min-w-0 rounded-2xl border border-chat-700 bg-chat-800 p-4 sm:p-5">
+          <h2 id="edit-heading" class="text-lg font-bold">2. Edit a JSON or theme file</h2>
+          <label for="file-select" class="mt-3 block text-sm font-semibold">Story file</label>
+          <select id="file-select" class="mt-1 min-h-11 w-full rounded-xl border border-chat-700 bg-chat-950 px-3 text-sm text-ink-100">
+            <option value="">Load a story folder to begin</option>
+          </select>
+          <label for="json-editor" class="mt-3 block text-sm font-semibold">File contents</label>
+          <textarea id="json-editor" rows="24" spellcheck="false" autocomplete="off" autocapitalize="off" class="mt-1 min-h-80 w-full resize-y rounded-xl border border-chat-700 bg-chat-950 p-3 font-mono text-sm leading-relaxed text-ink-100" aria-describedby="edit-note"></textarea>
+          <p id="edit-note" class="mt-2 text-xs text-ink-300">Edits are held in memory. Download this file and replace the matching path in your story folder.</p>
+          <button id="download-file" type="button" disabled class="mt-3 inline-flex min-h-11 items-center rounded-full bg-out-600 px-5 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">Download edited file</button>
+        </section>
+
+        <div class="space-y-5">
+          <section aria-labelledby="validate-heading" class="rounded-2xl border border-chat-700 bg-chat-800 p-4 sm:p-5">
+            <h2 id="validate-heading" class="text-lg font-bold">3. Validate</h2>
+            <p id="validation-summary" role="status" aria-live="polite" class="mt-2 text-sm text-ink-300">Load story files to see validation results.</p>
+            <ul id="validation-issues" class="mt-3 space-y-2 text-sm"></ul>
+          </section>
+
+          <section aria-labelledby="flow-heading" class="rounded-2xl border border-chat-700 bg-chat-800 p-4 sm:p-5">
+            <h2 id="flow-heading" class="text-lg font-bold">Route outline</h2>
+            <p class="mt-2 text-sm text-ink-300">A structural view of choices, conditions, branches, quizzes and endings. It does not replace playing every route.</p>
+            <div id="flow-map" class="mt-3 space-y-4 text-sm"></div>
+          </section>
+
+          <section aria-labelledby="preview-heading" class="rounded-2xl border border-chat-700 bg-chat-800 p-4 sm:p-5">
+            <h2 id="preview-heading" class="text-lg font-bold">4. Preview</h2>
+            <p class="mt-2 text-sm text-ink-300">Preview opens in another tab and uses a separate save namespace, so it cannot overwrite normal game progress. Keep this Studio tab open while previewing imported local assets.</p>
+            <a id="preview-story" href="./index.html?studio-preview=1" target="_blank" aria-disabled="true" class="mt-3 inline-flex min-h-11 items-center rounded-full bg-out-600 px-5 py-2 text-sm font-bold text-white aria-disabled:cursor-not-allowed aria-disabled:opacity-50">Open phone preview</a>
+            <p id="preview-status" role="status" aria-live="polite" class="mt-2 text-sm text-ink-300"></p>
+          </section>
+        </div>
+      </div>
+    </main>
+    <script type="module" src="./engine/studio.ts"></script>
+  </body>
+</html>

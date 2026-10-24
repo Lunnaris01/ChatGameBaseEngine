@@ -1,0 +1,42 @@
+[
+  { "type": "chapter", "number": 2, "text": "Tea, no rush", "time": "Saturday Afternoon", "at": "15:40" },
+  { "type": "them", "text": "I brought the map and found the quietest table. Would you like to choose the tea?" },
+  { "type": "status", "text": "online · at the teahouse" },
+  { "type": "photo", "name": "mai/chapter1/window", "alt": "A potted plant on a sunny windowsill", "caption": "The window seat has a tiny garden beside it." },
+  {
+    "type": "choice",
+    "options": [
+      {
+        "label": "Jasmine tea, please.",
+        "say": "Jasmine tea sounds lovely.",
+        "feelings": 1,
+        "then": [{ "type": "them", "text": "Good choice. It smells like the first warm day of spring." }]
+      },
+      {
+        "label": "I'll trust your recommendation.",
+        "say": "Surprise me.",
+        "bond": 1,
+        "then": [{ "type": "them", "text": "Then I'll choose the tea I always order." }]
+      }
+    ]
+  },
+  { "type": "ask", "key": "favorite-tea", "placeholder": "What tea would you choose?", "feelings": 1 },
+  { "type": "if", "key": "favorite-tea", "is": "jasmine", "then": [{ "type": "them", "text": "Jasmine for you, then. I remembered." }] },
+  { "type": "stats", "bond": 1 },
+  { "type": "them", "text": "The map's first stop is right here. The next scene is waiting in Places, where we can talk face to face." },
+  { "type": "photo", "from": "me", "name": "mai/chapter1/postcard", "alt": "A hand-drawn map on a postcard", "caption": "I took a picture so we could follow the route." },
+  { "type": "sound", "sound": "them_chime" },
+  { "type": "wait", "time": 300 },
+  { "type": "add-to-chat", "chat": "tutorial", "steps": [{ "type": "them", "text": "Mai's map has a date at the teahouse. You can find it in Places." }] },
+  { "type": "milestone", "id": "teahouse-invitation" },
+  {
+    "type": "choice",
+    "options": [
+      {
+        "label": "Continue after our teahouse date",
+        "needs": { "key": "date-accepted", "is": "yes", "hint": "Play First date in Places, then come back here." },
+        "then": [{ "type": "them", "text": "That was lovely. I have one more part of the map to show you." }]
+      }
+    ]
+  }
+]

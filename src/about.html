@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>How to play — A Map to Somewhere</title>
+    <meta name="description" content="How to play a chat-based story: reply buttons, profiles, photos, places and choices." />
+    <meta name="theme-color" content="#0f172a" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="./engine/assets/chat.svg" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body class="min-h-dvh bg-chat-950 text-ink-100 antialiased">
+    <a href="#content" data-ui="skip" class="sr-only focus:not-sr-only focus:absolute focus:m-2 focus:rounded focus:bg-tick-400 focus:p-2 focus:font-bold focus:text-chat-950">Skip to content</a>
+    <main id="content" tabindex="-1" class="mx-auto max-w-prose px-4 py-12 outline-none">
+      <p><a href="./index.html" data-ui="action.backToGame" class="text-sm font-semibold text-tick-400 underline">← Back to the chat</a></p>
+      <h1 data-ui="about.title" class="mt-4 text-3xl font-bold">How to play</h1>
+      <div class="mt-6 space-y-4 text-ink-300">
+        <p data-ui="about.p1">Chat-based stories arrive as messages in a messenger thread. Read each one, then answer by tapping one of the reply buttons — or by typing when the story asks you to.</p>
+        <p data-ui="about.p2">Some conversations happen in person. The 📍 Places tab collects them: the same replies and choices, but no online status — just the room and the people in it. A place you've finished stays in the list, greyed out.</p>
+        <p data-ui="about.p3">Every message carries a time, and it is the story's own time, not your phone's clock. A chapter heading says when the scene happens, and the messages that follow walk the clock forward minute by minute — so a conversation you read at midnight still happened in the evening it was sent.</p>
+        <p data-ui="about.p4">Your choices shape where the conversation goes and build trust, feelings, attraction and bond, shown on each contact's profile. Some moments only unlock when a stat is high enough, or once you've played something in another thread. The ↺ button restarts the current chat, and ← takes you back.</p>
+        <p data-ui="about.p5">Profiles fill in as you talk. A contact's age, birthday, interests, likes and dislikes only appear once they've actually told you — anything else sits behind a "not yet revealed" marker. So it pays to listen, and to ask.</p>
+        <p data-ui="about.p6">A sound plays when a message arrives, and a story can set its own background sound — the ⚙️ Settings tab has a master volume and separate sliders for the ambience and the sound effects, and sliding one to zero silences it. Sound waits for your first tap, so nothing plays before you have touched the page.</p>
+        <p data-ui="about.p7">Your progress saves on this device, so you can close the tab and continue later. The 🖼️ tab groups photos by character, with a General folder for pictures that belong to the story rather than one person. Photos you haven't seen yet stay as grey question-mark placeholders, so you can see how many are left. Open one and use the arrow buttons, ← and →, or swipe to move through the gallery. The ⚙️ Settings tab also keeps six save slots, each stamped with the time you saved it; loading or overwriting one asks first. Choose a text pace from Slow, Normal, Quick reader, Speedy or Skip through, and delete everything if you ever want a fresh start.</p>
+      </div>
+      <p class="mt-8">
+        <a href="./index.html" data-ui="about.open" class="inline-flex min-h-11 items-center rounded-full bg-out-600 px-6 py-3 text-sm font-bold text-white">Open the chat</a>
+      </p>
+    </main>
+    <script type="module" src="./engine/main.ts"></script>
+  </body>
+</html>

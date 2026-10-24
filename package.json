@@ -1,0 +1,29 @@
+{
+  "name": "chat-story-game",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && bun scripts/precache.ts",
+    "preview": "vite preview",
+    "check": "tsc --noEmit && bun scripts/check-story.ts && bun test",
+    "story:check": "bun scripts/check-story.ts",
+    "test": "bun test",
+    "sound:make": "bun scripts/make-sound.ts"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.3",
+    "@types/bun": "^1.4.4",
+    "@tailwindcss/vite": "^4.1.0",
+    "@types/node": "^26.6.5",
+    "tailwindcss": "^4.1.0",
+    "typescript": "^5.9.0",
+    "vite": "^7.1.0"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/core": "^8.5.3"
+  }
+}

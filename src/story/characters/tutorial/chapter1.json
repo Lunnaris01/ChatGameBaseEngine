@@ -1,0 +1,175 @@
+[
+  { "type": "chapter", "number": 1, "time": "", "at": "09:00" },
+  { "type": "them", "text": "hey. i'm the tutorial for this phone. give me two minutes and you'll know how all of this works.", "typing": 250 },
+  {
+    "type": "them",
+    "text": "it's just a chat: i write, you answer with the buttons under the thread. when it says i'm typing, i'm typing. that's the whole thing.",
+    "typing": 350
+  },
+  {
+    "type": "choice",
+    "options": [
+      {
+        "label": "Got it",
+        "say": "got it",
+        "then": [{ "type": "them", "text": "good." }]
+      },
+      {
+        "label": "What if I don't answer?",
+        "say": "what if i don't answer?",
+        "then": [{ "type": "them", "text": "then i wait. nothing breaks, nothing moves on. your call." }]
+      }
+    ]
+  },
+  { "type": "them", "text": "You can leave this guide and come back any time. I've unlocked Mai's five-chapter romance and her first Teahouse date." },
+  { "type": "unlock", "chat": "mai" },
+  { "type": "unlock-place", "place": "teahouse", "chat": "first-date" },
+  {
+    "type": "them",
+    "text": "one thing before we go on: your answers move four numbers — trust, feelings, attraction and bond. everyone you meet keeps their own four.",
+    "typing": 350
+  },
+  {
+    "type": "choice",
+    "options": [
+      {
+        "label": "You're alright, tutorial",
+        "say": "Thanks for explaining it all. You are a pretty cool guy",
+        "bond": 1,
+        "then": [{ "type": "them", "text": "noted. Thank you!" }]
+      },
+      {
+        "label": "can you give me the shortcut...",
+        "say": "can you give me the shortcut...",
+        "attraction": -1,
+        "then": [{ "type": "them", "text": "Impatience. Quiet unattraktive..." }]
+      }
+    ]
+  },
+  { "type": "them", "text": "The number just moved. Stat changes are always accompanied by a sound. If you open the characters tab (tap my face/icon) — you can check the stats out!", "typing": 450},
+  {
+    "type": "choice",
+    "options": [
+      {
+        "label": "I checked it! Interesting!",
+        "say": "I checked it! Interesting!",
+        "then": [{ "type": "them", "text": "Stats are quiet important!" }]
+      },
+      {
+        "label": "I just wanna play",
+        "say": "I just wanna play",
+        "then": [{ "type": "them", "text": "You don't actually have to finish the tutorial. Feel free to explore the rest of the story whenever you're ready." }]
+      }
+    ]
+  },
+  { "type": "them", "text": "Some content will be gated behind stats. Want to get serious with someone? Try to find out what moves their feelings. But attraction also matters.", "typing": 450},
+  { "type": "them", "text": "But without enough trust, someone might not be willing to share a secret with you."},
+  { "type": "them", "text": "You will learn naturally. If you need to, you can always reset the game and try different answers.", "typing": 250},
+  { "type": "them", "text": "But if you really hate guessing, there is a setting to show which stat an answer will change.", "typing": 250},
+  { "type": "them", "text": "Did you notice how empty the character info is? A page only shows what someone has actually told you. the rest stays locked.", "typing": 350 },
+  { "type": "them", "text": "so let me fill mine in. i'm 23, and my birthday's april 2nd — two separate facts, two separate lines - go check my profile again!", "typing": 350 },
+  { "type": "reveal", "fact": "age" },
+  { "type": "reveal", "fact": "birthday" },
+  {
+    "type": "choice",
+    "options": [
+      {
+        "label": "So the page updates as you talk?",
+        "say": "so the page updates as you talk?",
+        "then": [{ "type": "them", "text": "the moment someone says a thing, it lands on their page." }]
+      },
+      {
+        "label": "What else goes on it?",
+        "say": "what else goes on it?",
+        "then": [{ "type": "them", "text": "only what they choose to tell you, which is the interesting part." }]
+      }
+    ]
+  },
+  {
+    "type": "them",
+    "text": "interests: how things work, checklists, showing off. likes: careful reading, straight questions. dislikes: skipping the hints, walls of emoji.",
+    "typing": 450
+  },
+  { "type": "reveal", "fact": "interests", "value": "how things work" },
+  { "type": "reveal", "fact": "interests", "value": "checklists" },
+  { "type": "reveal", "fact": "interests", "value": "showing off" },
+  { "type": "reveal", "fact": "likes", "value": "careful reading" },
+  { "type": "reveal", "fact": "likes", "value": "straight questions" },
+  { "type": "reveal", "fact": "dislikes", "value": "skipping the hints" },
+  { "type": "reveal", "fact": "dislikes", "value": "emoji walls" },
+  { "type": "them", "text": "look again — Even more infos now. that's the trick with everyone you meet: listen, and it fills.", "typing": 250 },
+  {
+    "type": "them",
+    "text": "quizzes ask about what people told you, and the replies that land well usually match a like or dodge a dislike. Paying attention is rewarded!",
+    "typing": 450
+  },
+  {
+    "type": "choice",
+    "options": [
+      {
+        "label": "So what's your deal?",
+        "say": "so what's your deal?",
+        "then": [{ "type": "them", "text": "i read manuals for fun. it's on the page, like everything else." }]
+      },
+      {
+        "label": "Anything else I need to know?",
+        "say": "anything else i need to know before i go?",
+        "then": [{ "type": "them", "text": "the quick bar! I'll get to that next." }]
+      },
+      {
+        "label": "What's with the locked replies?",
+        "say": "what's with the locked replies?",
+        "needs": { "trust": 4, "hint": "Sometimes replies are gated. (4+ trust required)" },
+        "then": [
+          {
+            "type": "them",
+            "text": "that one was locked until you'd earned it. locked replies always show a hint about what is missing, and they open when your numbers or the story are far enough."
+          }
+        ]
+      }
+    ]
+  },
+  { "type": "them", "text": "before i forget — what should i call you?" },
+  { "type": "ask", "key": "name", "placeholder": "Type your name…" },
+  { "type": "them", "text": "okay, {name}. good to meet you properly." },
+  { "type": "them", "text": "now let me prove it. two questions about what I just told you." },
+  {
+    "type": "quiz",
+    "id": "tutorial-basics",
+    "questions": [
+      {
+        "q": "how old am i?",
+        "hint": "it's on my page.",
+        "answers": [
+          { "text": "23", "right": true, "reply": "correct." },
+          { "text": "18", "reply": "flattering, but no." },
+          { "text": "30", "reply": "not yet." }
+        ]
+      },
+      {
+        "q": "what do i dislike?",
+        "hint": "also on my page.",
+        "answers": [
+          { "text": "Skipping the hints", "right": true, "reply": "exactly. hints are there to be read." },
+          { "text": "Straight questions", "reply": "no, that one is a like." },
+          { "text": "Checklists", "reply": "that is just an interest of mine." }
+        ]
+      }
+    ],
+    "pass": [
+      { "type": "them", "text": "see how that works? i told you, and it stuck. And you gained a stat. Easy isn't it?" },
+      { "type": "stats", "trust": 1 }
+    ]
+  },
+  {
+    "type": "them",
+    "text": "So... About that Quickbar! - You got some options:Chats, Locations (basically irl chats), your image collection, a character overview and the Setting",
+    "typing": 350
+  },
+  { "type": "them", "text": "Your Chats.. To Chat!"},
+  { "type": "them", "text": "Locations - Basically Chats but IRL"},
+  { "type": "them", "text": "Gallery - Collection of Pictures you have seen"},
+  { "type": "them", "text": "Characters - It's kind of self explanatory!"},
+  { "type": "them", "text": "And finally the settings! Just check them out. You can Save and Load Games, change the volume and other stuff. Why don't you have a look? Or just go ahead and Chat with someone. Your choice!", "typing": 1000},
+  { "type": "chapter-end" }
+]

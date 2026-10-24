@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="864" height="1536" viewBox="0 0 864 1536" role="img" aria-labelledby="title">
+  <title id="title">A winding garden path beside a river</title>
+  <defs>
+    <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#e9a97e"/><stop offset="1" stop-color="#f7dfb0"/></linearGradient>
+    <linearGradient id="water" x2="0" y2="1"><stop stop-color="#7eb5b4"/><stop offset="1" stop-color="#477d83"/></linearGradient>
+  </defs>
+  <rect width="864" height="1536" fill="url(#sky)"/>
+  <circle cx="672" cy="252" r="92" fill="#fff0c5"/>
+  <path d="M0 706c186-128 323-67 461-120 151-58 264-151 403-98v573H0z" fill="#6e9879"/>
+  <path d="M0 916c179-64 310-12 469-68 136-48 271-104 395-91v499H0z" fill="url(#water)"/>
+  <path d="M0 1286c183-137 282-64 443-145 113-57 208-173 421-159v554H0z" fill="#d6bd8c"/>
+  <path d="M91 1536c103-208 196-254 326-340 112-74 246-124 373-210" fill="none" stroke="#f4e8c8" stroke-width="70" stroke-linecap="round"/>
+  <g fill="#fff2df">
+    <circle cx="183" cy="861" r="13"/><circle cx="252" cy="828" r="11"/><circle cx="700" cy="1010" r="14"/>
+    <circle cx="742" cy="1082" r="10"/><circle cx="136" cy="1170" r="12"/><circle cx="568" cy="750" r="11"/>
+  </g>
+  <g fill="#456c59">
+    <path d="M111 822c-10-114 44-196 116-214 39 77 4 167-116 214z"/><path d="M758 782c-29-121 16-209 89-241 51 72 31 171-89 241z"/>
+    <path d="M705 1260c-30-98 8-173 69-196 42 61 26 141-69 196z"/>
+  </g>
+  <text x="432" y="1468" text-anchor="middle" font-family="sans-serif" font-size="32" fill="#243e43">THE LONG WAY HOME</text>
+</svg>

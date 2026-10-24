@@ -1,0 +1,150 @@
+/** Built-in interface copy; stories may replace any listed key in story.json. */
+export const UI_MESSAGES = {
+  "skip": "Skip to content",
+  "nav.label": "Sections",
+  "nav.chats": "Chats",
+  "nav.places": "Places",
+  "nav.gallery": "Gallery",
+  "nav.characters": "Characters",
+  "nav.settings": "Settings",
+  "action.howToPlay": "How to play",
+  "action.backToGame": "← Back to the chat",
+  "action.leave": "Leave",
+  "chat.leavePlace": "Leave {name}",
+  "action.close": "Close",
+  "action.save": "Save game",
+  "action.load": "Load game",
+  "action.send": "Send message",
+  "settings.story": "This story",
+  "settings.titleLabel": "Title",
+  "settings.saveCount": "6 slots on this device",
+  "settings.speed": "Text speed",
+  "settings.speedDescription": "Choose how quickly messages arrive.",
+  "speed.slow": "Slow",
+  "speed.normal": "Normal",
+  "speed.quick": "Quick reader",
+  "speed.speedy": "Speedy",
+  "speed.skip": "Skip through",
+  "speed.slowNote": "25% slower than normal — every pause is a little longer.",
+  "speed.normalNote": "The default pace — every pause is twice as long as written.",
+  "speed.quickNote": "The pace the story was written at.",
+  "speed.speedyNote": "Messages arrive 50% faster than the written pace.",
+  "speed.skipNote": "Fastest — best for replaying to the next decision.",
+  "speed.slowShort": "25% slower",
+  "speed.defaultShort": "default",
+  "speed.asWrittenShort": "as written",
+  "speed.speedyShort": "1.5× written pace",
+  "speed.fastestShort": "fastest",
+  "settings.sound": "Sound",
+  "settings.soundDescription": "A sound when a message arrives, and any ambience the story asks for. Sound waits for your first tap. The sliders are a share of the level the story ships with, so 100% is as loud as it was written.",
+  "volume.master": "Master",
+  "volume.ambient": "Ambient",
+  "volume.effects": "Sound effects",
+  "volume.note": "Master scales everything. Ambient is the story's background track; Sound effects are the one-shot sounds for messages, choices, quizzes and stats. Slide one to zero to silence it.",
+  "settings.saveGames": "Save games",
+  "settings.saveDescription": "Keep up to six snapshots on this device. A save records every chat, place scene, choice and stat, plus the time you made it.",
+  "settings.saveNote": "Choose a slot for this moment. Saving over an occupied slot asks first.",
+  "settings.loadNote": "Choose a save to return to. Loading replaces your current progress after you confirm.",
+  "settings.data": "Your data",
+  "settings.dataDescription": "Chats, place scenes, photos, milestones, save slots and your name live in this browser. Nothing is uploaded anywhere, and clearing site data in your browser settings removes them too. Your text speed, volume levels and the developer switches are preferences, so they stay even when you delete your chats.",
+  "settings.deleteWarning": "This wipes every chat, place scene, photo memory, milestone, name and save slot on this device. There is no undo.",
+  "settings.developer": "Developer",
+  "settings.devMode": "Dev mode",
+  "settings.devNote": "Brings development-only characters and places into view, and reveals the content and stat-preview controls below.",
+  "settings.content": "NSFW content",
+  "settings.contentNote": "Off is SFW. On plays second picture versions and the steps marked NSFW-only; the story's path is unchanged, and turning Dev mode off puts it back to SFW.",
+  "settings.statsPreview": "Show stat changes",
+  "settings.statsNote": "Shows how much each reply changes the stats, under the reply button. It comes on with Dev mode; you can switch it off while Dev mode stays on.",
+  "settings.closeSave": "Close save games",
+  "settings.overwrite": "Overwrite",
+  "profile.stats": "Stats",
+  "profile.title": "Profile",
+  "profile.interests": "Interests",
+  "profile.likes": "Likes",
+  "profile.dislikes": "Dislikes",
+  "profile.openChat": "Open chat →",
+  "stat.trust": "Trust",
+  "stat.feelings": "Feelings",
+  "stat.attraction": "Attraction",
+  "stat.bond": "Bond",
+  "chat.online": "online",
+  "chat.typing": "typing…",
+  "chat.unknown": "Unknown number",
+  "chat.friend": "friend",
+  "chat.replyPlaceholder": "Reply with the buttons above…",
+  "chat.backToChats": "Back to chats",
+  "chat.backToPlaces": "Back to places",
+  "chat.viewProfile": "View contact profile",
+  "chat.viewNamedProfile": "View {name}'s profile",
+  "chat.restart": "Restart this chat",
+  "chat.replyCount": "{count} replies available.",
+  "chat.replyCount.one": "1 reply available.",
+  "chat.typedReply": "A typed reply is requested.",
+  "chat.replyRequired": "Please enter a reply before sending.",
+  "quiz.prompt": "pop quiz — pick one",
+  "quiz.available": "Quiz answer choices available.",
+  "gallery.hidden": "Hidden photo",
+  "gallery.notYet": "Not yet revealed",
+  "gallery.viewer": "Photo viewer",
+  "gallery.previous": "Previous photo",
+  "gallery.next": "Next photo",
+  "profile.ageHidden": "Age not yet revealed",
+  "profile.birthdayHidden": "Birthday not yet revealed",
+  "profile.notYet": "not yet revealed",
+  "profile.yearsOld": "{age} years old",
+  "profile.birthday": "Birthday {date}",
+  "state.new": "NEW",
+  "story.end.wait": "⏳ To be continued — progress with {who} to continue this chat.",
+  "story.end.pause": "⏳ This chapter is complete; more can follow.",
+  "story.end.finale": "🏁 You have reached the end of the storyline with this character.",
+  "settings.delete": "Delete all chats",
+  "settings.deleteAgain": "Tap again — really delete everything",
+  "settings.backup": "Backup and restore",
+  "settings.backupDescription": "Export a local JSON backup before clearing browser data or moving to another device. Import replaces this game's progress and preferences after confirmation.",
+  "settings.backupNote": "Backups contain only this game's local story progress and preferences. They are not uploaded.",
+  "settings.export": "Export backup",
+  "settings.import": "Import a backup file",
+  "settings.replaceBackup": "Replace local progress?",
+  "settings.cancel": "Cancel",
+  "settings.replaceProgress": "Replace progress",
+  "settings.restartTitle": "Restart this chat?",
+  "settings.restartDescription": "This clears this conversation's messages, choices, and stats on this device. It does not affect other chats.",
+  "settings.keepChatting": "Keep chatting",
+  "settings.restart": "Restart",
+  "about.title": "How to play",
+  "about.open": "Open the chat",
+  "about.p1": "Chat-based stories arrive as messages in a messenger thread. Read each one, then answer by tapping one of the reply buttons — or by typing when the story asks you to.",
+  "about.p2": "Some conversations happen in person. The 📍 Places tab collects them: the same replies and choices, but no online status — just the room and the people in it. A place you've finished stays in the list, greyed out.",
+  "about.p3": "Every message carries a time, and it is the story's own time, not your phone's clock. A chapter heading says when the scene happens, and the messages that follow walk the clock forward minute by minute — so a conversation you read at midnight still happened in the evening it was sent.",
+  "about.p4": "Your choices shape where the conversation goes and build trust, feelings, attraction and bond, shown on each contact's profile. Some moments only unlock when a stat is high enough, or once you've played something in another thread. The ↺ button restarts the current chat, and ← takes you back.",
+  "about.p5": "Profiles fill in as you talk. A contact's age, birthday, interests, likes and dislikes only appear once they've actually told you — anything else sits behind a \"not yet revealed\" marker. So it pays to listen, and to ask.",
+  "about.p6": "A sound plays when a message arrives, and a story can set its own background sound — the ⚙️ Settings tab has a master volume and separate sliders for the ambience and the sound effects, and sliding one to zero silences it. Sound waits for your first tap, so nothing plays before you have touched the page.",
+  "about.p7": "Your progress saves on this device, so you can close the tab and continue later. The 🖼️ tab groups photos by character, with a General folder for pictures that belong to the story rather than one person. Photos you haven't seen yet stay as grey question-mark placeholders, so you can see how many are left. Open one and use the arrow buttons, ← and →, or swipe to move through the gallery. The ⚙️ Settings tab also keeps six save slots, each stamped with the time you saved it; loading or overwriting one asks first. Choose a text pace from Slow, Normal, Quick reader, Speedy or Skip through, and delete everything if you ever want a fresh start.",
+} as const;
+
+export type UiKey = keyof typeof UI_MESSAGES;
+export type UiOverrides = Partial<Record<UiKey, string>>;
+export type Translate = (key: UiKey, values?: Record<string, string | number>) => string;
+
+export function createTranslator(overrides: UiOverrides | undefined): Translate {
+  return (key, values = {}) =>
+    (overrides?.[key] ?? UI_MESSAGES[key]).replace(/\{([a-zA-Z]+)\}/g, (match, name: string) =>
+      Object.hasOwn(values, name) ? String(values[name]) : match,
+    );
+}
+
+export function applyTranslations(root: ParentNode, overrides: UiOverrides | undefined): void {
+  const translate = createTranslator(overrides);
+  for (const element of root.querySelectorAll<HTMLElement>("[data-ui]")) {
+    const key = element.dataset.ui as UiKey;
+    if (Object.hasOwn(UI_MESSAGES, key)) element.textContent = translate(key);
+  }
+  for (const element of root.querySelectorAll<HTMLElement>("[data-ui-aria]")) {
+    const key = element.dataset.uiAria as UiKey;
+    if (Object.hasOwn(UI_MESSAGES, key)) element.setAttribute("aria-label", translate(key));
+  }
+  for (const element of root.querySelectorAll<HTMLInputElement>("[data-ui-placeholder]")) {
+    const key = element.dataset.uiPlaceholder as UiKey;
+    if (Object.hasOwn(UI_MESSAGES, key)) element.placeholder = translate(key);
+  }
+}

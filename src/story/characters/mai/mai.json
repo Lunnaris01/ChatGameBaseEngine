@@ -1,0 +1,14 @@
+{
+  "name": "Mai",
+  "color": "#bd5c48",
+  "avatar": "mai/avatar",
+  "teaser": "I made a little test route. Want to see what this phone can do?",
+  "unlocked": false,
+  "order": 1,
+  "age": 24,
+  "birthday": "12 May",
+  "tagline": "A careful planner who likes turning small details into shared stories.",
+  "interests": ["window gardens", "old maps", "tea"],
+  "likes": ["thoughtful questions", "honest answers"],
+  "dislikes": ["rushed plans"]
+}

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="864" height="1536" viewBox="0 0 864 1536" role="img" aria-labelledby="title">
+  <title id="title">A tiny potted plant on a sunny windowsill</title>
+  <defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#a5d8e8"/><stop offset="1" stop-color="#fff0c2"/></linearGradient></defs>
+  <rect width="864" height="1536" fill="#52616b"/>
+  <rect x="85" y="90" width="694" height="1030" rx="26" fill="#ead6b4"/>
+  <rect x="125" y="130" width="614" height="950" fill="url(#sky)"/>
+  <path d="M125 818c142-150 272-64 398-184 94-89 157-45 216-111v557H125z" fill="#9dbb8f"/>
+  <path d="M432 130v950M125 608h614" stroke="#ead6b4" stroke-width="30"/>
+  <rect x="62" y="1115" width="740" height="104" rx="16" fill="#b78761"/>
+  <path d="M317 1190h230l-26 229H343z" fill="#c66b51"/>
+  <path d="M317 1200h230" stroke="#e5a17c" stroke-width="22"/>
+  <path d="M432 1195c-54-121-137-141-103-239 69 30 114 90 103 239m1 7c2-156 78-233 151-218 10 81-36 153-151 218m-4 3c-43-117-15-210 49-238 54 56 48 155-49 238" fill="#548766"/>
+  <ellipse cx="433" cy="1420" rx="183" ry="24" fill="#36414a" opacity=".25"/>
+  <text x="432" y="1490" text-anchor="middle" font-family="sans-serif" font-size="34" fill="#f5ead5">MAI'S WINDOW GARDEN</text>
+</svg>

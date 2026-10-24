@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="864" height="1536" viewBox="0 0 864 1536" role="img" aria-labelledby="title">
+  <title id="title">A hand-drawn map on a postcard</title>
+  <rect width="864" height="1536" fill="#d9c7a7"/>
+  <g transform="rotate(-3 432 768)">
+    <rect x="104" y="229" width="656" height="1010" rx="24" fill="#fff5dc" stroke="#7d624a" stroke-width="12"/>
+    <rect x="154" y="279" width="556" height="594" fill="#d5e4d5"/>
+    <path d="M199 730c118-159 189-48 273-185s148-134 192-85M198 476c114 12 152 117 251 99s137-95 232-117" fill="none" stroke="#bd5c48" stroke-width="22" stroke-linecap="round" stroke-dasharray="8 24"/>
+    <path d="M255 380c63-95 113-96 169-29 56 66 102 40 148-21" fill="none" stroke="#67917d" stroke-width="18" stroke-linecap="round"/>
+    <circle cx="235" cy="745" r="25" fill="#bd5c48"/><circle cx="665" cy="401" r="25" fill="#bd5c48"/>
+    <path d="M184 955h325m-325 52h260m-260 52h369" stroke="#c6b79c" stroke-width="14" stroke-linecap="round"/>
+    <text x="574" y="1172" font-family="cursive" font-size="52" fill="#7d624a">See you there — M</text>
+  </g>
+</svg>

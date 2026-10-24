@@ -1,0 +1,48 @@
+[
+  { "type": "chapter", "number": 4, "text": "A brave question", "time": "Monday Evening", "at": "20:05" },
+  { "type": "them", "text": "I had a long day. Could I tell you something without making it a big deal?" },
+  { "type": "status", "text": "away · gathering courage" },
+  { "type": "wait", "time": 350 },
+  { "type": "status", "text": "online" },
+  {
+    "type": "choice",
+    "options": [
+      {
+        "label": "I'm here. Take your time.",
+        "say": "I'm here. Take all the time you need.",
+        "trust": 1,
+        "feelings": 1,
+        "then": [
+          { "type": "remember", "key": "confession", "value": "honest" },
+          { "type": "them", "text": "I think I like you as more than a map-reading friend." }
+        ]
+      },
+      {
+        "label": "We can take this one step at a time.",
+        "say": "We can take this one step at a time.",
+        "bond": 1,
+        "then": [
+          { "type": "remember", "key": "confession", "value": "slow" },
+          { "type": "them", "text": "Thank you. I like you, and I don't want to rush what is growing." }
+        ]
+      }
+    ]
+  },
+  { "type": "if", "key": "confession", "is": "honest", "then": [{ "type": "them", "text": "Your answer made it easier to say what I feel." }] },
+  { "type": "if", "key": "confession", "not": "honest", "then": [{ "type": "them", "text": "We have time. I'm glad we can be honest about the pace." }] },
+  {
+    "type": "branch",
+    "needs": { "trust": 4 },
+    "any": [{ "feelings": 4 }, { "bond": 4 }],
+    "then": [{ "type": "them", "text": "I trust this feeling enough to ask: will you meet me at the garden?" }],
+    "otherwise": [{ "type": "them", "text": "No need to answer now. The garden will still be there when we're ready." }]
+  },
+  { "type": "photo", "name": "mai/chapter1/window", "nsfw_version": "mai/chapter1/window-variant", "alt": "A potted plant in evening light", "caption": "A small picture from the quiet part of the day." },
+  { "type": "them", "text": "A harmless private joke: anyone who remembers my tea order is dangerously charming.", "nsfw": "yes" },
+  { "type": "me", "text": "Then I'll remember it." },
+  { "type": "stats", "attraction": 1 },
+  { "type": "rename", "name": "Mai · map keeper", "initial": "M" },
+  { "type": "them", "text": "I saved this thread as 'map keeper'. It makes me smile when your message appears." },
+  { "type": "sound", "sound": "sparkle" },
+  { "type": "milestone", "id": "said-it-out-loud" }
+]

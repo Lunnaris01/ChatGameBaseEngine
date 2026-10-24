@@ -1,0 +1,40 @@
+[
+  { "type": "chapter", "number": 5, "text": "A map to somewhere", "time": "Saturday Evening", "at": "17:30" },
+  { "type": "them", "text": "The last mark on the map is the riverside garden. I kept it for a day that felt important." },
+  { "type": "photo", "name": "mai/chapter3/garden", "alt": "A winding garden path beside a river", "caption": "The long way home is my favorite." },
+  { "type": "if", "key": "confession", "is": "honest", "then": [{ "type": "them", "text": "I'm glad we said how we feel. I don't want to hide it behind a map anymore." }] },
+  { "type": "if", "key": "confession", "not": "honest", "then": [{ "type": "them", "text": "We can keep taking our time. I still want to walk beside you." }] },
+  { "type": "branch", "needs": { "trust": 4 }, "any": [{ "feelings": 5 }, { "bond": 5 }], "then": [{ "type": "them", "text": "I feel ready to call this the beginning of something real." }], "otherwise": [{ "type": "them", "text": "I had a lovely day. Whatever we call it, I want to see you again." }] },
+  { "type": "them", "text": "So, what should we call this first date?" },
+  {
+    "type": "choice",
+    "options": [
+      {
+        "label": "Our first date. And not our last.",
+        "say": "Our first date. And not our last.",
+        "feelings": 1,
+        "then": [
+          { "type": "them", "text": "Then it's a date. I'm happy the map brought us here." },
+          { "type": "story-end" }
+        ]
+      },
+      {
+        "label": "A good beginning. Let's take our time.",
+        "say": "A good beginning. Let's take our time.",
+        "bond": 1,
+        "then": [
+          { "type": "them", "text": "I like that. We can leave the next page open." },
+          { "type": "chapter-end" }
+        ]
+      },
+      {
+        "label": "One more walk in the Riverside Garden?",
+        "say": "One more walk in the Riverside Garden?",
+        "then": [
+          { "type": "them", "text": "Meet me at the sunset path. I'll bring the map." },
+          { "type": "continue-elsewhere", "for": "the Riverside Garden" }
+        ]
+      }
+    ]
+  }
+]

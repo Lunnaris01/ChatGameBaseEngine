@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>A Map to Somewhere</title>
+    <meta name="description" content="A five-chapter chat romance with Mai, including local in-person scenes." />
+    <meta name="theme-color" content="#0f172a" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="./engine/assets/chat.svg" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body class="min-h-dvh bg-black text-ink-100 antialiased sm:flex sm:justify-center">
+    <a href="#main" data-ui="skip" class="sr-only focus:not-sr-only focus:absolute focus:m-2 focus:rounded focus:bg-tick-400 focus:p-2 focus:font-bold focus:text-chat-950">Skip to content</a>
+    <main id="main" tabindex="-1" class="flex h-dvh w-full flex-col bg-chat-950 outline-none sm:max-w-[480px] sm:border-x sm:border-chat-700">
+      <h1 class="sr-only">A Map to Somewhere</h1>
+      <div id="view-list" class="flex h-full flex-col">
+        <header class="flex items-center gap-3 bg-chat-800 px-4 py-3">
+          <h2 data-ui="nav.chats" class="text-lg font-bold">Chats</h2>
+          <a href="./about.html" data-ui-aria="action.howToPlay" aria-label="How to play" class="ml-auto flex min-h-11 min-w-11 items-center justify-center rounded-full text-lg text-ink-300">ⓘ</a>
+        </header>
+        <div id="chatlist" class="flex-1 space-y-1 overflow-y-auto px-2 py-3"></div>
+      </div>
+
+      <div id="view-places" class="hidden h-full flex-col">
+        <header class="flex items-center gap-3 bg-chat-800 px-4 py-3">
+          <h2 data-ui="nav.places" class="text-lg font-bold">Places</h2>
+        </header>
+        <div id="placelist" class="flex-1 space-y-4 overflow-y-auto px-2 py-3"></div>
+      </div>
+
+      <div id="view-gallery" class="hidden h-full flex-col">
+        <header class="flex items-center gap-3 bg-chat-800 px-4 py-3">
+          <h2 data-ui="nav.gallery" class="text-lg font-bold">Gallery</h2>
+          <p id="gallery-count" class="ml-auto text-sm text-ink-300"></p>
+        </header>
+        <div id="gallery-list" class="flex-1 space-y-5 overflow-y-auto p-3"></div>
+      </div>
+
+      <div id="view-settings" class="hidden h-full flex-col">
+        <header class="flex items-center gap-3 bg-chat-800 px-4 py-3">
+          <h2 data-ui="nav.settings" class="text-lg font-bold">Settings</h2>
+        </header>
+        <div class="flex-1 space-y-6 overflow-y-auto px-4 py-6">
+          <section aria-labelledby="settings-story">
+            <h2 id="settings-story" data-ui="settings.story" class="text-sm font-bold uppercase tracking-wide text-tick-400">This story</h2>
+            <dl class="mt-2 space-y-2 text-sm">
+              <div class="flex items-baseline justify-between gap-3">
+                <dt data-ui="settings.titleLabel" class="text-ink-300">Title</dt>
+                  <dd id="story-title" class="font-semibold">A Map to Somewhere</dd>
+              </div>
+              <div class="flex items-baseline justify-between gap-3">
+                <dt class="text-ink-300">Saves</dt>
+                <dd data-ui="settings.saveCount" class="font-semibold">6 slots on this device</dd>
+              </div>
+            </dl>
+            <p class="mt-3"><a href="./about.html" data-ui="action.howToPlay" class="inline-flex min-h-11 items-center rounded-full border border-out-500 px-5 py-2 text-sm font-semibold text-tick-400">How to play</a></p>
+          </section>
+
+          <section aria-labelledby="settings-speed">
+            <h2 id="settings-speed" data-ui="settings.speed" class="text-sm font-bold uppercase tracking-wide text-tick-400">Text speed</h2>
+            <p data-ui="settings.speedDescription" class="mt-2 text-sm text-ink-300">Choose how quickly messages arrive.</p>
+            <fieldset class="mt-3 space-y-2" aria-describedby="speed-note">
+              <legend class="sr-only">Text speed</legend>
+              <label class="flex min-h-11 cursor-pointer items-center gap-3 rounded-2xl border border-chat-700 px-4 py-2">
+                <input type="radio" name="speed" value="slow" class="h-4 w-4 shrink-0 accent-tick-400" />
+                <span data-ui="speed.slow" class="text-sm font-semibold">Slow</span>
+                <span data-ui="speed.slowShort" class="ml-auto text-xs text-ink-300">25% slower</span>
+              </label>
+              <label class="flex min-h-11 cursor-pointer items-center gap-3 rounded-2xl border border-chat-700 px-4 py-2">
+                <input type="radio" name="speed" value="normal" checked class="h-4 w-4 shrink-0 accent-tick-400" />
+                <span data-ui="speed.normal" class="text-sm font-semibold">Normal</span>
+                <span data-ui="speed.defaultShort" class="ml-auto text-xs text-ink-300">default</span>
+              </label>
+              <label class="flex min-h-11 cursor-pointer items-center gap-3 rounded-2xl border border-chat-700 px-4 py-2">
+                <input type="radio" name="speed" value="quick" class="h-4 w-4 shrink-0 accent-tick-400" />
+                <span data-ui="speed.quick" class="text-sm font-semibold">Quick reader</span>
+                <span data-ui="speed.asWrittenShort" class="ml-auto text-xs text-ink-300">as written</span>
+              </label>
+              <label class="flex min-h-11 cursor-pointer items-center gap-3 rounded-2xl border border-chat-700 px-4 py-2">
+                <input type="radio" name="speed" value="speedy" class="h-4 w-4 shrink-0 accent-tick-400" />
+                <span data-ui="speed.speedy" class="text-sm font-semibold">Speedy</span>
+                <span data-ui="speed.speedyShort" class="ml-auto text-xs text-ink-300">1.5× written pace</span>
+              </label>
+              <label class="flex min-h-11 cursor-pointer items-center gap-3 rounded-2xl border border-chat-700 px-4 py-2">
+                <input type="radio" name="speed" value="skip" class="h-4 w-4 shrink-0 accent-tick-400" />
+                <span data-ui="speed.skip" class="text-sm font-semibold">Skip through</span>
+                <span data-ui="speed.fastestShort" class="ml-auto text-xs text-ink-300">fastest</span>
+              </label>
+            </fieldset>
+            <p id="speed-note" data-ui="speed.normalNote" class="mt-2 text-xs text-ink-300">The default pace — every pause is twice as long as written.</p>
+          </section>
+
+          <section aria-labelledby="settings-sound">
+            <h2 id="settings-sound" data-ui="settings.sound" class="text-sm font-bold uppercase tracking-wide text-tick-400">Sound</h2>
+            <p data-ui="settings.soundDescription" class="mt-2 text-sm text-ink-300">A sound when a message arrives, and any ambience the story asks for. Sound waits for your first tap. The sliders are a share of the level the story ships with, so 100% is as loud as it was written.</p>
+            <div class="mt-4 space-y-3">
+              <div class="flex items-center gap-3">
+                <label for="vol-master" data-ui="volume.master" class="w-28 shrink-0 text-sm font-semibold">Master</label>
+                <input id="vol-master" type="range" min="0" max="100" step="5" value="100" aria-describedby="vol-note" class="min-h-11 w-full cursor-pointer accent-tick-400" />
+                <output id="vol-master-value" for="vol-master" class="w-12 shrink-0 text-right text-base font-bold text-tick-400">100%</output>
+              </div>
+              <div class="flex items-center gap-3">
+                <label for="vol-ambient" data-ui="volume.ambient" class="w-28 shrink-0 text-sm font-semibold">Ambient</label>
+                <input id="vol-ambient" type="range" min="0" max="100" step="5" value="100" aria-describedby="vol-note" class="min-h-11 w-full cursor-pointer accent-tick-400" />
+                <output id="vol-ambient-value" for="vol-ambient" class="w-12 shrink-0 text-right text-base font-bold text-tick-400">100%</output>
+              </div>
+              <div class="flex items-center gap-3">
+                <label for="vol-effects" data-ui="volume.effects" class="w-28 shrink-0 text-sm font-semibold">Sound effects</label>
+                <input id="vol-effects" type="range" min="0" max="100" step="5" value="100" aria-describedby="vol-note" class="min-h-11 w-full cursor-pointer accent-tick-400" />
+                <output id="vol-effects-value" for="vol-effects" class="w-12 shrink-0 text-right text-base font-bold text-tick-400">100%</output>
+              </div>
+            </div>
+            <p id="vol-note" data-ui="volume.note" class="mt-2 text-xs text-ink-300">Master scales everything. Ambient is the story's background track; Sound effects are the one-shot sounds for messages, choices, quizzes and stats. Slide one to zero to silence it.</p>
+          </section>
+
+          <section aria-labelledby="settings-saves">
+            <h2 id="settings-saves" data-ui="settings.saveGames" class="text-sm font-bold uppercase tracking-wide text-tick-400">Save games</h2>
+            <p data-ui="settings.saveDescription" class="mt-2 text-sm text-ink-300">Keep up to six snapshots on this device. A save records every chat, place scene, choice and stat, plus the time you made it.</p>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <button id="save-open" type="button" aria-controls="save-panel" aria-expanded="false" data-ui="action.save" class="inline-flex min-h-11 items-center rounded-full bg-out-600 px-5 py-2 text-sm font-bold text-white">Save game</button>
+              <button id="load-open" type="button" aria-controls="save-panel" aria-expanded="false" data-ui="action.load" class="inline-flex min-h-11 items-center rounded-full border border-out-500 px-5 py-2 text-sm font-semibold text-tick-400">Load game</button>
+            </div>
+            <div id="save-panel" aria-labelledby="save-panel-title" class="mt-4 hidden">
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <h3 id="save-panel-title" tabindex="-1" class="text-base font-bold focus:outline-none">Save game</h3>
+                  <p id="save-panel-note" class="mt-1 text-xs text-ink-300"></p>
+                </div>
+                <button id="save-close" type="button" aria-label="Close save games" data-ui-aria="settings.closeSave" class="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full text-ink-300">✕</button>
+              </div>
+              <p id="save-status" role="status" aria-live="polite" class="mt-3 text-xs text-ink-300"></p>
+              <ul id="save-slots" class="mt-3 space-y-2"></ul>
+              <div id="save-confirm" class="mt-3 hidden rounded-2xl border border-out-500 bg-chat-950 p-3">
+                <p id="save-confirm-text" class="text-sm"></p>
+                <div class="mt-3 flex flex-wrap gap-2">
+                  <button id="save-confirm-ok" type="button" aria-describedby="save-confirm-text" data-ui="settings.overwrite" class="inline-flex min-h-11 items-center rounded-full bg-out-600 px-5 py-2 text-sm font-bold text-white">Overwrite</button>
+                  <button id="save-confirm-cancel" type="button" aria-describedby="save-confirm-text" data-ui="settings.cancel" class="inline-flex min-h-11 items-center rounded-full border border-out-500 px-5 py-2 text-sm font-semibold text-tick-400">Cancel</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section aria-labelledby="settings-backup">
+            <h2 id="settings-backup" data-ui="settings.backup" class="text-sm font-bold uppercase tracking-wide text-tick-400">Backup and restore</h2>
+            <p data-ui="settings.backupDescription" class="mt-2 text-sm text-ink-300">Export a local JSON backup before clearing browser data or moving to another device. Import replaces this game's progress and preferences after confirmation.</p>
+            <div class="mt-3 space-y-3">
+              <button id="backup-export" type="button" data-ui="settings.export" class="inline-flex min-h-11 items-center rounded-full border border-out-500 px-5 py-2 text-sm font-semibold text-tick-400">Export backup</button>
+              <label for="backup-import" data-ui="settings.import" class="block text-sm font-semibold">Import a backup file</label>
+              <input id="backup-import" type="file" accept=".json,application/json" aria-describedby="backup-note" class="block min-h-11 w-full text-sm text-ink-100 file:mr-3 file:min-h-11 file:rounded-full file:border-0 file:bg-out-600 file:px-4 file:font-bold file:text-white" />
+            </div>
+            <p id="backup-note" data-ui="settings.backupNote" class="mt-2 text-xs text-ink-300">Backups contain only this game's local story progress and preferences. They are not uploaded.</p>
+            <p id="backup-status" role="status" aria-live="polite" class="mt-2 text-sm text-ink-300"></p>
+          </section>
+
+          <section aria-labelledby="settings-data">
+            <h2 id="settings-data" data-ui="settings.data" class="text-sm font-bold uppercase tracking-wide text-tick-400">Your data</h2>
+            <p data-ui="settings.dataDescription" class="mt-2 text-sm text-ink-300">Chats, place scenes, photos, milestones, save slots and your name live in this browser. Nothing is uploaded anywhere, and clearing site data in your browser settings removes them too. Your text speed, volume levels and the developer switches are preferences, so they stay even when you delete your chats.</p>
+            <p class="mt-4"><button id="del-arm" type="button" data-ui="settings.delete" class="inline-flex min-h-11 items-center rounded-full bg-red-900 px-6 py-3 text-sm font-bold text-white">Delete all chats</button></p>
+            <p data-ui="settings.deleteWarning" class="mt-2 text-xs text-ink-300">This wipes every chat, place scene, photo memory, milestone, name and save slot on this device. There is no undo.</p>
+          </section>
+
+          <section aria-labelledby="settings-dev">
+            <h2 id="settings-dev" data-ui="settings.developer" class="text-sm font-bold uppercase tracking-wide text-tick-400">Developer</h2>
+            <label for="dev-mode" class="mt-3 flex min-h-11 cursor-pointer items-center justify-between gap-4">
+                <span data-ui="settings.devMode" class="text-sm font-semibold">Dev mode</span>
+              <span class="relative inline-flex h-7 w-12 shrink-0 items-center">
+                <input id="dev-mode" type="checkbox" role="switch" aria-describedby="dev-mode-note" class="peer sr-only" />
+                <span aria-hidden="true" class="relative h-7 w-12 rounded-full bg-chat-700 transition-colors after:absolute after:left-0.5 after:top-0.5 after:h-6 after:w-6 after:rounded-full after:bg-ink-100 after:transition-transform after:content-[''] peer-checked:bg-out-600 peer-checked:after:translate-x-5 peer-focus-visible:ring-2 peer-focus-visible:ring-tick-400 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-chat-950"></span>
+              </span>
+            </label>
+            <p id="dev-mode-note" data-ui="settings.devNote" class="mt-1 text-xs text-ink-300">Brings development-only characters and places into view, and reveals the content and stat-preview controls below.</p>
+
+            <div id="nsfw-row" class="mt-4 hidden">
+              <label for="nsfw-mode" class="flex min-h-11 cursor-pointer items-center justify-between gap-4">
+                <span data-ui="settings.content" class="text-sm font-semibold">NSFW content</span>
+                <span class="relative inline-flex h-7 w-12 shrink-0 items-center">
+                  <input id="nsfw-mode" type="checkbox" role="switch" aria-describedby="nsfw-mode-note" class="peer sr-only" />
+                  <span aria-hidden="true" class="relative h-7 w-12 rounded-full bg-chat-700 transition-colors after:absolute after:left-0.5 after:top-0.5 after:h-6 after:w-6 after:rounded-full after:bg-ink-100 after:transition-transform after:content-[''] peer-checked:bg-out-600 peer-checked:after:translate-x-5 peer-focus-visible:ring-2 peer-focus-visible:ring-tick-400 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-chat-950"></span>
+                </span>
+              </label>
+              <p id="nsfw-mode-note" data-ui="settings.contentNote" class="mt-1 text-xs text-ink-300">Off is SFW. On plays second picture versions and the steps marked NSFW-only; the story's path is unchanged, and turning Dev mode off puts it back to SFW.</p>
+            </div>
+
+            <label for="show-stats" class="mt-4 flex min-h-11 cursor-pointer items-center justify-between gap-4">
+                <span data-ui="settings.statsPreview" class="text-sm font-semibold">Show stat changes</span>
+              <span class="relative inline-flex h-7 w-12 shrink-0 items-center">
+                <input id="show-stats" type="checkbox" role="switch" aria-describedby="show-stats-note" class="peer sr-only" />
+                <span aria-hidden="true" class="relative h-7 w-12 rounded-full bg-chat-700 transition-colors after:absolute after:left-0.5 after:top-0.5 after:h-6 after:w-6 after:rounded-full after:bg-ink-100 after:transition-transform after:content-[''] peer-checked:bg-out-600 peer-checked:after:translate-x-5 peer-focus-visible:ring-2 peer-focus-visible:ring-tick-400 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-chat-950"></span>
+              </span>
+            </label>
+            <p id="show-stats-note" data-ui="settings.statsNote" class="mt-1 text-xs text-ink-300">Shows how much each reply changes the stats, under the reply button. It comes on with Dev mode; you can switch it off while Dev mode stays on.</p>
+          </section>
+        </div>
+      </div>
+
+      <div id="view-chars" class="hidden h-full flex-col">
+        <header class="flex items-center gap-2 bg-chat-800 px-4 py-2">
+          <h2 data-ui="nav.characters" class="text-lg font-bold">Characters</h2>
+        </header>
+        <div id="chargrid" class="grid flex-1 grid-cols-2 content-start gap-3 overflow-y-auto p-4"></div>
+      </div>
+
+      <div id="view-profile" class="hidden h-full flex-col">
+        <header class="flex items-center gap-2 bg-chat-800 px-2 py-2">
+          <button id="profile-back" type="button" aria-label="Back" class="flex min-h-11 min-w-11 items-center justify-center rounded-full text-xl text-ink-300">←</button>
+          <h2 data-ui="profile.title" class="text-lg font-bold">Profile</h2>
+        </header>
+        <div class="flex-1 space-y-5 overflow-y-auto px-4 py-6">
+          <div class="flex items-center gap-4">
+            <span id="profile-avatar" aria-hidden="true" class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-2xl font-bold text-white">?</span>
+            <div>
+              <h2 id="profile-name" class="text-2xl font-bold"></h2>
+              <p id="profile-age" class="text-sm text-ink-300"></p>
+              <p id="profile-birthday" class="text-sm text-ink-300"></p>
+            </div>
+          </div>
+          <p id="profile-tag" class="rounded-2xl bg-chat-800 p-4 text-sm italic text-parchment-300"></p>
+        <section aria-label="Stats">
+          <h2 data-ui="profile.stats" class="text-sm font-bold uppercase tracking-wide text-tick-400">Stats</h2>
+          <ul id="profile-stats" class="mt-2 space-y-2"></ul>
+        </section>
+          <section aria-label="Interests" id="sec-interests">
+              <h2 data-ui="profile.interests" class="text-sm font-bold uppercase tracking-wide text-tick-400">Interests</h2>
+            <ul id="profile-interests" class="mt-2 flex flex-wrap gap-2 text-sm"></ul>
+          </section>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <section aria-label="Likes" id="sec-likes">
+              <h2 data-ui="profile.likes" class="text-sm font-bold uppercase tracking-wide text-tick-400">Likes</h2>
+              <ul id="profile-likes" class="mt-2 space-y-1 text-sm text-ink-100"></ul>
+            </section>
+            <section aria-label="Dislikes" id="sec-dislikes">
+              <h2 data-ui="profile.dislikes" class="text-sm font-bold uppercase tracking-wide text-tick-400">Dislikes</h2>
+              <ul id="profile-dislikes" class="mt-2 space-y-1 text-sm text-ink-100"></ul>
+            </section>
+          </div>
+          <p><button id="profile-chat" type="button" data-ui="profile.openChat" class="inline-flex min-h-11 items-center rounded-full bg-out-600 px-6 py-3 text-sm font-bold text-white">Open chat →</button></p>
+        </div>
+      </div>
+
+      <nav id="tabs" aria-label="Sections" data-ui-aria="nav.label" class="flex border-t border-chat-700 bg-chat-800">
+        <button id="tab-chats" type="button" class="flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-xs font-bold text-tick-400"><span aria-hidden="true" class="text-xl">💬</span><span data-ui="nav.chats">Chats</span></button>
+        <button id="tab-places" type="button" class="flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-xs font-bold text-ink-300"><span aria-hidden="true" class="text-xl">📍</span><span data-ui="nav.places">Places</span></button>
+        <button id="tab-gallery" type="button" class="flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-xs font-bold text-ink-300"><span aria-hidden="true" class="text-xl">🖼️</span><span data-ui="nav.gallery">Gallery</span></button>
+        <button id="tab-chars" type="button" class="flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-xs font-bold text-ink-300"><span aria-hidden="true" class="text-xl">👥</span><span data-ui="nav.characters">Characters</span></button>
+        <button id="tab-settings" type="button" class="flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-xs font-bold text-ink-300"><span aria-hidden="true" class="text-xl">⚙️</span><span data-ui="nav.settings">Settings</span></button>
+      </nav>
+
+      <dialog id="restart-confirm" aria-labelledby="restart-confirm-title" class="w-[calc(100%-2rem)] max-w-sm rounded-2xl border border-chat-700 bg-chat-800 p-5 text-ink-100 backdrop:bg-black/80">
+        <h2 id="restart-confirm-title" data-ui="settings.restartTitle" class="text-lg font-bold">Restart this chat?</h2>
+        <p data-ui="settings.restartDescription" class="mt-2 text-sm text-ink-300">This clears this conversation's messages, choices, and stats on this device. It does not affect other chats.</p>
+        <div class="mt-4 flex flex-wrap justify-end gap-2">
+          <button id="restart-cancel" type="button" data-ui="settings.keepChatting" class="inline-flex min-h-11 items-center rounded-full border border-out-500 px-5 py-2 text-sm font-semibold text-tick-400">Keep chatting</button>
+          <button id="restart-confirm-ok" type="button" data-ui="settings.restart" class="inline-flex min-h-11 items-center rounded-full bg-out-600 px-5 py-2 text-sm font-bold text-white">Restart</button>
+        </div>
+      </dialog>
+
+      <dialog id="backup-confirm" aria-labelledby="backup-confirm-title" aria-describedby="backup-confirm-text" class="w-[calc(100%-2rem)] max-w-sm rounded-2xl border border-chat-700 bg-chat-800 p-5 text-ink-100 backdrop:bg-black/80">
+        <h2 id="backup-confirm-title" data-ui="settings.replaceBackup" class="text-lg font-bold">Replace local progress?</h2>
+        <p id="backup-confirm-text" class="mt-2 text-sm text-ink-300"></p>
+        <div class="mt-4 flex flex-wrap justify-end gap-2">
+          <button id="backup-cancel" type="button" data-ui="settings.cancel" class="inline-flex min-h-11 items-center rounded-full border border-out-500 px-5 py-2 text-sm font-semibold text-tick-400">Cancel</button>
+          <button id="backup-confirm-ok" type="button" data-ui="settings.replaceProgress" class="inline-flex min-h-11 items-center rounded-full bg-out-600 px-5 py-2 text-sm font-bold text-white">Replace progress</button>
+        </div>
+      </dialog>
+
+      <div id="lightbox" role="dialog" aria-modal="true" aria-label="Photo viewer" data-ui-aria="gallery.viewer" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/85 p-4">
+        <div class="w-full max-w-md rounded-2xl bg-chat-800 p-3">
+          <div class="relative">
+            <img id="lightbox-img" src="" alt="" width="640" height="640" class="mx-auto max-h-[70vh] w-full rounded-xl object-contain" />
+            <button id="lightbox-prev" type="button" aria-label="Previous photo" data-ui-aria="gallery.previous" disabled class="absolute left-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-xl text-white disabled:opacity-30">←</button>
+            <button id="lightbox-next" type="button" aria-label="Next photo" data-ui-aria="gallery.next" disabled class="absolute right-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-xl text-white disabled:opacity-30">→</button>
+          </div>
+          <div class="flex items-baseline justify-between gap-3 px-1 pt-2">
+            <p id="lightbox-cap" class="text-sm text-ink-300" aria-live="polite"></p>
+            <p id="lightbox-pos" class="shrink-0 text-xs tabular-nums text-ink-300"></p>
+          </div>
+          <p class="px-1"><button id="lightbox-close" type="button" data-ui="action.close" class="mt-1 inline-flex min-h-11 items-center rounded-full border border-out-500 px-5 py-2 text-sm font-semibold text-tick-400">Close</button></p>
+        </div>
+      </div>
+
+      <div id="view-chat" class="hidden h-full flex-col">
+        <header class="flex items-center gap-2 bg-chat-800 px-2 py-2">
+          <button id="back" type="button" aria-label="Back to chats" data-ui-aria="chat.backToChats" class="flex min-h-11 min-w-11 items-center justify-center rounded-full text-xl text-ink-300">←</button>
+          <button id="who" type="button" aria-label="View contact profile" data-ui-aria="chat.viewProfile" class="flex min-w-0 flex-1 items-center gap-2 text-left">
+            <span id="avatar" aria-hidden="true" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-chat-700 text-lg font-bold text-tick-400">?</span>
+            <span class="min-w-0 flex-1">
+              <span id="chatname" data-ui="chat.unknown" class="block truncate font-semibold">Unknown number</span>
+              <span id="presence" data-ui="chat.online" class="block truncate text-xs text-ink-300">online</span>
+            </span>
+          </button>
+          <a href="./about.html" aria-label="How to play" data-ui-aria="action.howToPlay" class="flex min-h-11 min-w-11 items-center justify-center rounded-full text-lg text-ink-300">ⓘ</a>
+          <button id="restart" type="button" aria-label="Restart this chat" data-ui-aria="chat.restart" aria-haspopup="dialog" class="flex min-h-11 min-w-11 items-center justify-center rounded-full text-lg text-ink-300">↺</button>
+        </header>
+
+        <div id="log" role="log" aria-live="polite" aria-label="Chat messages" class="flex-1 space-y-2 overflow-y-auto px-3 py-4"></div>
+
+        <p id="choice-status" role="status" aria-live="polite" class="sr-only"></p>
+        <div id="choices" class="flex flex-wrap gap-2 px-3 pb-1"></div>
+
+        <form id="bar" style="display:none" class="flex items-center gap-2 bg-chat-950 px-3 pb-4 pt-1">
+          <label for="field" class="sr-only">Message</label>
+          <input id="field" type="text" autocomplete="off" maxlength="120" placeholder="Reply with the buttons above…" data-ui-placeholder="chat.replyPlaceholder" disabled
+            class="min-h-11 flex-1 rounded-full bg-chat-800 px-4 text-ink-100 placeholder:text-ink-300 disabled:opacity-60" />
+          <button id="send" type="submit" aria-label="Send message" data-ui-aria="action.send" disabled
+            class="flex min-h-11 min-w-11 items-center justify-center rounded-full bg-out-600 text-xl text-white disabled:opacity-40">➤</button>
+        </form>
+      </div>
+    </main>
+    <script type="module" src="./engine/main.ts"></script>
+  </body>
+</html>

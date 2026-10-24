@@ -1,0 +1,69 @@
+{
+  "name": "The Riverside Garden",
+  "host": "mai",
+  "icon": "🌿",
+  "color": "#52735d",
+  "teaser": "The last line on Mai's map follows the river.",
+  "order": 2,
+  "ambient": "mai/room/ambience",
+  "chats": [
+    {
+      "id": "first-walk",
+      "title": "First walk · Sunday",
+      "teaser": "Unlocked after the Teahouse after-hours scene.",
+      "unlocked": false,
+      "at": "17:05",
+      "chat": [
+        { "type": "them", "speaker": "Mai", "text": "The map was right. The river is quieter on Sundays." },
+        { "type": "me", "text": "I'm glad you saved this part for me." },
+        { "type": "them", "speaker": "Musician", "text": "Last song before sunset!" },
+        { "type": "divider", "text": "The path bends toward the water." },
+        { "type": "wait", "time": 150 },
+        { "type": "photo", "name": "mai/chapter3/garden", "alt": "A winding garden path beside a river", "caption": "The long way home." },
+        { "type": "milestone", "id": "first-river-walk" },
+        {
+          "type": "choice",
+          "options": [
+            {
+              "label": "Stop by the stone bridge.",
+              "then": [
+                { "type": "remember", "key": "garden-route", "value": "bridge" },
+                { "type": "remember", "key": "garden-visit", "value": "bridge", "chat": "mai" },
+                { "type": "them", "speaker": "Mai", "text": "This is the last mark on the postcard." }
+              ]
+            },
+            {
+              "label": "Follow the water a little farther.",
+              "then": [
+                { "type": "remember", "key": "garden-route", "value": "water" },
+                { "type": "remember", "key": "garden-visit", "value": "water", "chat": "mai" },
+                { "type": "them", "speaker": "Mai", "text": "Then we'll take the longer path together." }
+              ]
+            }
+          ]
+        },
+        { "type": "if", "key": "garden-route", "is": "bridge", "then": [{ "type": "them", "speaker": "Mai", "text": "The bridge has the best view." }] },
+        { "type": "sound", "sound": "chime" },
+        { "type": "add-to-chat", "chat": "tutorial", "steps": [{ "type": "them", "text": "Mai and you found the last mark on the river map." }] },
+        { "type": "unlock-place", "place": "riverside", "chat": "sunset" }
+      ]
+    },
+    {
+      "id": "sunset",
+      "title": "Sunset path · unlocked by the walk",
+      "teaser": "A quiet pause by the water.",
+      "unlocked": false,
+      "at": "18:10",
+      "chat": [
+        { "type": "them", "speaker": "Mai", "text": "I used to walk here when I needed to think. It feels different sharing it." },
+        { "type": "me", "text": "Different in a good way?" },
+        { "type": "them", "speaker": "Mai", "text": "In the best way." },
+        { "type": "photo", "name": "mai/chapter3/garden", "alt": "A winding garden path beside a river", "caption": "The sun found the water." },
+        { "type": "remember", "key": "sunset-memory", "value": "shared" },
+        { "type": "remember", "key": "sunset-memory", "value": "shared", "chat": "mai" },
+        { "type": "if", "key": "sunset-memory", "is": "shared", "then": [{ "type": "them", "speaker": "Mai", "text": "I'll remember this walk." }] },
+        { "type": "sound", "sound": "sparkle" }
+      ]
+    }
+  ]
+}

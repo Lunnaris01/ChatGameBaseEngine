@@ -1,0 +1,13 @@
+{
+  "name": "Tutorial",
+  "color": "#6b5b50",
+  "teaser": "New here? I explain how this phone works.",
+  "unlocked": true,
+  "order": 0,
+  "age": 23,
+  "birthday": "April 2nd",
+  "tagline": "The guide. Explains the phone so you don't have to guess.",
+  "interests": ["how things work", "checklists", "showing off"],
+  "likes": ["careful reading", "straight questions"],
+  "dislikes": ["skipping the hints", "emoji walls"]
+}

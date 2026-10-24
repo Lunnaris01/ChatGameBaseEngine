@@ -1,0 +1,74 @@
+[
+  { "type": "chapter", "number": 3, "text": "The long way home", "time": "Saturday Evening", "at": "18:05" },
+  { "type": "them", "text": "Thank you for coming to the teahouse. I liked how easy it was to talk with you." },
+  { "type": "if", "key": "date-accepted", "is": "yes", "then": [{ "type": "them", "text": "I saved the window seat in my memory. It felt like our first little tradition." }] },
+  { "type": "photo", "name": "mai/chapter1/postcard", "alt": "The map's riverside route drawn on a postcard", "caption": "The last line follows the river." },
+  {
+    "type": "choice",
+    "options": [
+      {
+        "label": "Let's take the riverside route sometime.",
+        "say": "I'd like to walk by the river with you.",
+        "feelings": 1,
+        "then": [
+          { "type": "remember", "key": "riverside-plan", "value": "walk" },
+          { "type": "them", "text": "I'd like that. The garden path is quiet at sunset." }
+        ]
+      },
+      {
+        "label": "Show me how you drew this map.",
+        "say": "Tell me how you made this route.",
+        "trust": 1,
+        "then": [
+          { "type": "remember", "key": "riverside-plan", "value": "map" },
+          { "type": "them", "text": "I mark places where I felt at ease. I hope this one becomes another." }
+        ]
+      }
+    ]
+  },
+  { "type": "them", "text": "Quick question: where did we meet for tea?" },
+  {
+    "type": "quiz",
+    "id": "first-date",
+    "questions": [
+      {
+        "q": "Where did we meet?",
+        "hint": "It was the first stop on the map.",
+        "answers": [
+          { "text": "The Little Teahouse", "right": true, "reply": "Right. I saved the window seat." },
+          { "text": "The train station", "reply": "Not that one." },
+          { "text": "The museum", "reply": "Maybe for another map." }
+        ]
+      },
+      {
+        "q": "What was drawn on the postcard?",
+        "hint": "Look at the photo from the first chapter.",
+        "answers": [
+          { "text": "A route by the river", "right": true, "reply": "Exactly." },
+          { "text": "A list of errands", "reply": "No, it is more romantic than that." }
+        ]
+      }
+    ],
+    "pass": [
+      { "type": "them", "text": "You remembered. That makes me feel seen." },
+      { "type": "stats", "trust": 1 }
+    ]
+  },
+  { "type": "if", "key": "_q:first-date", "is": "clean", "then": [{ "type": "them", "text": "Both answers on the first try. You were listening." }] },
+  { "type": "them", "text": "I like thoughtful questions, and I am interested in window gardens. Rushed plans make me nervous." },
+  { "type": "reveal", "fact": "interests", "value": "window gardens" },
+  { "type": "reveal", "fact": "likes", "value": "thoughtful questions" },
+  { "type": "reveal", "fact": "dislikes", "value": "rushed plans" },
+  {
+    "type": "branch",
+    "needs": { "trust": 3 },
+    "any": [{ "feelings": 4 }, { "bond": 4 }],
+    "then": [{ "type": "them", "text": "I feel comfortable making another plan with you." }],
+    "otherwise": [{ "type": "them", "text": "We can keep getting to know each other at our own pace." }]
+  },
+  { "type": "if", "key": "riverside-plan", "any": ["walk", "map"], "then": [{ "type": "them", "text": "The Riverside Garden is on our next route. The After hours scene in Places opens the path." }] },
+  { "type": "photo", "from": "me", "name": "mai/chapter1/window", "alt": "A small plant on a bright windowsill", "caption": "A little green thing to remember the day by." },
+  { "type": "sound", "sound": "chime" },
+  { "type": "divider", "text": "Sunday morning", "at": "10:00" },
+  { "type": "milestone", "id": "second-date-planned" }
+]

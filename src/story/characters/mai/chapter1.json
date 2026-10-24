@@ -1,0 +1,73 @@
+[
+  { "type": "chapter", "number": 1, "text": "The map in the margin", "time": "Friday Evening", "at": "18:10" },
+  { "type": "them", "text": "Hi, I'm Mai from the neighborhood book-swap group. Did you find the little map I left by the teahouse window?", "typing": 300 },
+  { "type": "status", "text": "online · hoping the map stayed dry" },
+  { "type": "photo", "name": "mai/chapter1/postcard", "alt": "A hand-drawn map on a postcard", "caption": "I drew the route in the margin of an old book." },
+  { "type": "them", "text": "I'm 24, and my birthday is 12 May. I draw routes when I'm nervous; it makes a new place feel familiar." },
+  { "type": "reveal", "fact": "age" },
+  { "type": "reveal", "fact": "birthday" },
+  {
+    "type": "choice",
+    "options": [
+      {
+        "label": "I found it. Let's meet over tea.",
+        "say": "I found it. Can I return it over tea tomorrow?",
+        "trust": 1,
+        "then": [
+          { "type": "remember", "key": "first-plan", "value": "tea" },
+          { "type": "them", "text": "I'd like that. I'll save you the window seat." },
+          { "type": "reveal", "fact": "interests", "value": "old maps" }
+        ]
+      },
+      {
+        "label": "Is it a treasure map?",
+        "say": "Is there treasure at the end?",
+        "attraction": 1,
+        "then": [
+          { "type": "remember", "key": "first-plan", "value": "mystery" },
+          { "type": "them", "text": "Only good tea and company. I hope that's enough." },
+          { "type": "reveal", "fact": "interests", "value": "tea" }
+        ]
+      },
+      {
+        "label": "Ask what the last mark means",
+        "needs": { "trust": 4, "hint": "Build a little trust first (4+ Trust)." },
+        "then": [{ "type": "them", "text": "That part is a small secret. Let's get to know each other first." }]
+      }
+    ]
+  },
+  { "type": "stats", "bond": 1 },
+  { "type": "milestone", "id": "first-note" },
+  {
+    "type": "branch",
+    "needs": { "trust": 3 },
+    "any": [{ "bond": 3 }, { "attraction": 3 }],
+    "then": [{ "type": "them", "text": "I like this already. You make a simple map feel like a plan." }],
+    "otherwise": [{ "type": "them", "text": "No rush. We can take the long route and see how it feels." }]
+  },
+  { "type": "if", "key": "first-plan", "is": "tea", "then": [{ "type": "them", "text": "Tea it is. Saturday afternoon, at the little teahouse." }] },
+  { "type": "if", "key": "first-plan", "any": ["tea", "mystery"], "then": [{ "type": "them", "text": "Either way, I'd be happy to see you." }] },
+  { "type": "if", "key": "first-plan", "not": "mystery", "then": [{ "type": "them", "text": "I promise the map is less complicated than it looks." }] },
+  { "type": "if", "key": "other-plan", "none": ["train", "car"], "then": [{ "type": "them", "text": "We haven't made any other plans yet. One step at a time." }] },
+  { "type": "wait", "time": 250 },
+  { "type": "divider", "text": "A little later", "style": "fade" },
+  { "type": "them", "text": "Before I go — what should I call you?" },
+  { "type": "ask", "key": "name", "placeholder": "What should I call you?" },
+  { "type": "them", "text": "Nice to meet you properly, {name}." },
+  {
+    "type": "choice",
+    "options": [
+      {
+        "label": "Open the timed note",
+        "needs": { "milestone": "first-note", "inChat": "mai", "waitSeconds": 1, "hint": "It unlocks one second after our first exchange." },
+        "then": [{ "type": "them", "text": "The last mark on the map is the riverside garden. I'll show you when the time is right." }]
+      },
+      {
+        "label": "Read the tea-plan note",
+        "needs": { "key": "first-plan", "is": "tea", "hint": "This note is for the tea plan." },
+        "then": [{ "type": "them", "text": "The window table is ours, if you still want it." }]
+      },
+      { "label": "Keep chatting", "then": [{ "type": "them", "text": "Tomorrow, then. I'll bring the map." }] }
+    ]
+  }
+]
