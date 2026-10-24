@@ -53,7 +53,7 @@ targets the first character in your story.
 | `STORY_GUIDE.md` | Story-only development guide with examples for all features |
 | `scripts/check-story.ts` | CLI story validation and content diagnostics |
 | `scripts/precache.ts` | Builds the production offline asset list |
-| `tests/` | Parser, storage, localization, and runner-gate tests |
+| `tests/` | Parser, storage, localization, pacing, and runner-gate tests |
 | `.github/workflows/check.yml` | CI typecheck, story check, tests, and build |
 | `dist/` | Generated production output; never edit by hand |
 

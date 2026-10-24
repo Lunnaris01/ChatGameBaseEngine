@@ -24,6 +24,7 @@ import { makeBackup, parseBackup } from "./backup";
 import type { GameBackup } from "./backup";
 import { createTranslator } from "./i18n";
 import type { UiKey } from "./i18n";
+import { messageDelays } from "./pacing";
 
 const STAT_META: { key: Stat; icon: string }[] = [
   { key: "trust", icon: trustIcon },
@@ -620,29 +621,29 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
     alt: string,
     nsfwVersion: string | undefined,
     caption: string,
-    typing: number,
-    pause: number,
+    typing?: number,
+    pause?: number,
     at?: number,
   ): Promise<void> {
+    const defaults = messageDelays(caption);
     // The player's own images land instantly on their side — no typing indicator.
     if (from === "me") {
       postImg(t, "me", name, alt, nsfwVersion, caption, at);
-      await beat(pause);
+      await beat(pause ?? defaults.pause);
       return;
     }
     const el = startTyping(t);
-    await beat(typing);
+    await beat(typing ?? defaults.typing);
     el.remove();
     if (!runGate.isCurrent(myGen)) return;
     if (!t.scene) presenceEl.textContent = tr("chat.online");
     postImg(t, "them", name, alt, nsfwVersion, caption, at);
-    await beat(pause);
+    await beat(pause ?? defaults.pause);
   }
 
   // ---- text speed ----------------------------------------------------------
   //
-  // Five paces instead of a slider. Normal is the old speed 1 (twice the
-  // written pace), Quick reader is as written, and Skip through is old speed 5.
+  // Five pace multipliers apply equally to calculated beats and explicit delays.
   const SPEED_IDS = ["slow", "normal", "quick", "speedy", "skip"] as const;
   type Speed = (typeof SPEED_IDS)[number];
   const SPEED_PRESETS: Record<Speed, { factor: number; note: UiKey }> = {
@@ -695,19 +696,20 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
     t: Thread,
     myGen: number,
     text: string,
-    typing = 1500,
-    pause = 500,
+    typing?: number,
+    pause?: number,
     speaker?: string,
     at?: number,
     duration?: number,
   ): Promise<void> {
+    const defaults = messageDelays(text);
     const dots = startTyping(t);
-    await beat(typing);
+    await beat(typing ?? defaults.typing);
     dots.remove();
     if (!runGate.isCurrent(myGen)) return;
     if (!t.scene) presenceEl.textContent = tr("chat.online");
     post(t, "them", text, speaker, at, duration);
-    await beat(pause);
+    await beat(pause ?? defaults.pause);
   }
 
   function cardShell(): HTMLElement {
@@ -893,16 +895,23 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
     return new Promise((resolve) => {
       let timer = 0;
       let done = false;
+      let settled = false;
       let announced = false;
-      const cancel = (): void => {
-        if (done) return;
-        done = true;
-        window.clearTimeout(timer);
-        refreshChoices = null;
-        boxEl.innerHTML = "";
-        choiceStatus.textContent = "";
+      const finish = (): void => {
+        if (settled) return;
+        settled = true;
         if (cancelInteraction === cancel) cancelInteraction = null;
         resolve();
+      };
+      const cancel = (): void => {
+        window.clearTimeout(timer);
+        if (!done) {
+          done = true;
+          refreshChoices = null;
+          boxEl.innerHTML = "";
+          choiceStatus.textContent = "";
+        }
+        finish();
       };
       cancelInteraction = cancel;
       const render = (): void => {
@@ -932,7 +941,6 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
             b.addEventListener("click", () => {
               if (!runGate.isCurrent(myGen) || done) return;
               done = true;
-              if (cancelInteraction === cancel) cancelInteraction = null;
               refreshChoices = null;
               window.clearTimeout(timer);
               boxEl.innerHTML = "";
@@ -941,7 +949,7 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
               applyStats(t, opt.effects);
               t.data.queue.splice(1, 0, ...opt.then);
               saveThread(t);
-              resolve();
+              void beat(messageDelays(opt.say).pause).then(finish);
             }, { once: true });
           }
           boxEl.appendChild(b);
@@ -1070,13 +1078,15 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
             post(t, "me", a.text);
             applyStats(t, a.effects);
             void (async () => {
-              await sayThem(t, myGen, fill(t, a.reply), 1200, 400);
+              await beat(messageDelays(a.text).pause);
+              if (!runGate.isCurrent(myGen)) return;
+              await sayThem(t, myGen, fill(t, a.reply));
               if (!runGate.isCurrent(myGen)) return;
               if (a.right) {
                 finish(tries === 1);
                 return;
               }
-              await sayThem(t, myGen, fill(t, item.hint), 1100, 400);
+              await sayThem(t, myGen, fill(t, item.hint));
               if (!runGate.isCurrent(myGen)) return;
               render();
             })();
@@ -1188,13 +1198,13 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
         renderList();
       }
     } else if (step.t === "img") {
-      await sayImg(t, myGen, step.from, step.name, step.alt, step.nsfwVersion, step.caption ? fill(t, step.caption) : "", step.typing ?? 1500, step.pause ?? 500, step.at);
+      await sayImg(t, myGen, step.from, step.name, step.alt, step.nsfwVersion, step.caption ? fill(t, step.caption) : "", step.typing, step.pause, step.at);
     } else if (step.t === "msg") {
       if (step.from === "them") {
-        await sayThem(t, myGen, fill(t, step.text), step.typing ?? 1500, step.pause ?? 500, step.speaker, step.at, step.duration);
+        await sayThem(t, myGen, fill(t, step.text), step.typing, step.pause, step.speaker, step.at, step.duration);
       } else {
         post(t, step.from, step.text, undefined, step.at, step.duration);
-        await beat(step.pause ?? 600);
+        await beat(step.pause ?? messageDelays(step.text).pause);
       }
     } else if (step.t === "sound") {
       sounds.named(step.sound);
@@ -1209,7 +1219,7 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
       let clean = true;
       sounds.play("quiz");
       for (const item of step.questions) {
-        await sayThem(t, myGen, fill(t, item.q), 1500, 450);
+        await sayThem(t, myGen, fill(t, item.q));
         if (!runGate.isCurrent(myGen)) return;
         const ok = await askQuizQuestion(t, myGen, item);
         if (!runGate.isCurrent(myGen)) return;

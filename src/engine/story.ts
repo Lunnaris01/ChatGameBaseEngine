@@ -279,6 +279,17 @@ function takeDuration(ctx: Ctx, where: string, raw: Raw): number | undefined {
   return raw.duration;
 }
 
+/** Reads an optional explicit message typing/pause override in milliseconds. */
+function takeDelay(ctx: Ctx, where: string, raw: Raw, key: "typing" | "pause"): number | undefined {
+  const value = raw[key];
+  if (value === undefined) return undefined;
+  if (!isNum(value) || value < 0 || value > 60000) {
+    report(ctx, where, "error", `"${key}" must be milliseconds from 0 to 60000`);
+    return undefined;
+  }
+  return value;
+}
+
 function checkId(ctx: Ctx, where: string, id: string): void {
   if (!ctx.ids.has(id)) {
     report(ctx, where, "error", `"${id}" does not match any character folder in src/story/characters/`);
@@ -405,7 +416,7 @@ function takeStepBody(ctx: Ctx, where: string, raw: unknown): Step | null {
   }
   fields(ctx, where, raw, ["type", ...spec.required], [...spec.optional, "nsfw"]);
   const label = `${where} ("${type}")`;
-  const optNum = (key: string): number | undefined => (isNum(raw[key]) ? raw[key] : undefined);
+  const optDelay = (key: "typing" | "pause"): number | undefined => takeDelay(ctx, label, raw, key);
 
   switch (type) {
     case "them": {
@@ -424,8 +435,8 @@ function takeStepBody(ctx: Ctx, where: string, raw: unknown): Step | null {
         t: "msg",
         from: "them",
         text: raw.text,
-        typing: optNum("typing"),
-        pause: optNum("pause"),
+        typing: optDelay("typing"),
+        pause: optDelay("pause"),
         duration,
         speaker: ctx.scene && isText(raw.speaker) ? raw.speaker : undefined,
         at: takeAt(ctx, label, raw),
@@ -439,8 +450,8 @@ function takeStepBody(ctx: Ctx, where: string, raw: unknown): Step | null {
         t: "msg",
         from: "me",
         text: raw.text,
-        typing: optNum("typing"),
-        pause: optNum("pause"),
+        typing: optDelay("typing"),
+        pause: optDelay("pause"),
         duration,
         at: takeAt(ctx, label, raw),
       };
@@ -518,8 +529,8 @@ function takeStepBody(ctx: Ctx, where: string, raw: unknown): Step | null {
         nsfwVersion,
         caption: isText(raw.caption) ? raw.caption : undefined,
         gallery,
-        typing: optNum("typing"),
-        pause: optNum("pause"),
+        typing: optDelay("typing"),
+        pause: optDelay("pause"),
         at: takeAt(ctx, label, raw),
       };
     }

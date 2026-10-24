@@ -119,7 +119,7 @@ validation, localization, and runner-generation cancellation. A GitHub Actions
 workflow runs checks and a production build on pushes and pull requests.
 
 **Value:** moves regressions from manual discovery into repeatable checks. The
-current suite contains 19 passing tests.
+current suite contains 22 passing tests.
 
 ### 10. Runtime responsibilities have clearer boundaries
 
@@ -142,9 +142,23 @@ of truth.
 
 **Value:** lets a writer learn the content format without reading TypeScript.
 
+### 12. Message timing now scales with message length
+
+`src/engine/pacing.ts` supplies a bounded default typing duration based on
+visible character count and a default reply pause based on word count. The rule
+is applied to incoming text, scripted player lines, choice replies, quiz answers,
+and photo captions. Existing story-authored `typing` and `pause` overrides still
+take precedence, are speed-scaled as before, and now validate as 0–60,000 ms.
+Calculated defaults are clamped so short messages remain readable and long ones
+cannot stall the story indefinitely; an author can still explicitly ask for a
+longer pause within the validated limit.
+
+**Value:** prevents rapid bursts of long scripted player messages while avoiding
+the same fixed wait for every short reply.
+
 ## Verification snapshot
 
-- `bun run check`: strict TypeScript, story validation, and 19 tests pass.
+- `bun run check`: strict TypeScript, story validation, and 22 tests pass.
 - `bun run build`: Vite production build and offline precache generation pass.
 - The dev server returns the game and Story Studio at 375px; headless Chrome
   loads the Studio, validates the bundled story, and renders the route outline.

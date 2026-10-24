@@ -231,9 +231,15 @@ placed in the chapter array or a choice's `then` array.
 { "type": "wait", "time": 1500 }
 ```
 
-- `them.text` and `me.text` are required. `typing` and `pause` are milliseconds;
-  text-speed Settings scale them. `duration` is an explicit whole-minute gap
-  after a message. `at` pins the story clock to a time such as `18:13`.
+- `them.text` and `me.text` are required. When omitted, typing and reply pauses
+  are calculated from message length: typing is about 300 ms plus 14 ms per
+  visible character (clamped to 350–3,200 ms); pause is about 180 ms plus 35 ms
+  per word (clamped to 180–1,200 ms). The player's text-speed setting scales
+  these defaults.
+- `typing` and `pause` remain explicit millisecond overrides from 0 to 60,000.
+  Use them when a character should hesitate or rewrite a line. `duration` is a
+  separate explicit whole-minute gap after a message. `at` pins the story clock
+  to a time such as `18:13`.
 - `speaker` is allowed on `them` only inside a Place conversation.
 - A `chapter` step requires `number`, `time`, and `at`; use empty strings for
   blank `text` or `time`. `at: ""` means do not reset the clock.
@@ -244,6 +250,8 @@ placed in the chapter array or a choice's `then` array.
 - `rename` changes the list and thread name until that chat is restarted. The
   profile name in JSON remains the reset name.
 - `wait.time` is positive milliseconds and is capped at 60,000.
+- Choice replies and quiz answers also receive a length-based player pause.
+  Photo timing follows its caption; a captionless photo uses the minimum beat.
 
 The story clock is separate from the device clock. A chapter or Place chat's
 `at` seeds it. Text advances the clock by its word count plus a small message
@@ -618,10 +626,11 @@ The engine provides these screens without additional story steps:
 
 Settings supplies text speed, sound levels, six manual save slots, portable
 backup/restore, a local-data explanation, a two-step delete action, and
-developer controls. The five text speeds scale story delays: Slow is 25% slower
-than Normal; Normal is twice the authored pause; Quick reader uses the authored
-pause; Speedy is about 1.5× faster than the authored pace; Skip through is the
-fast replay pace. Master, ambient, and effects sliders multiply the levels in
+developer controls. The five text speeds scale both calculated delays and
+explicit story delays: Slow is 25% slower than Normal; Normal is twice the
+unscaled delay; Quick reader uses the unscaled delay; Speedy is about 1.5× faster
+than the unscaled pace; Skip through is the fast replay pace. Master, ambient,
+and effects sliders multiply the levels in
 `sounds.json`. Dev mode reveals `dev: true` characters/places and the stat
 preview; the optional content switch is behind Dev mode and resets to SFW when
 Dev mode is disabled.

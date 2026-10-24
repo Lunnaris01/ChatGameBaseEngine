@@ -196,6 +196,41 @@ describe("remembered-value conditions", () => {
     expect(issues.some((issue) => issue.level === "error" && issue.message.includes("sound must be a built-in voice"))).toBe(true);
   });
 
+  test("preserves explicit message-delay overrides and rejects invalid values", () => {
+    const result = buildStory(
+      {
+        "mai/mai.json": { name: "Mai" },
+        "mai/chapter1.json": [
+          { type: "chapter", number: 1, text: "", time: "", at: "14:00" },
+          { type: "them", text: "A deliberate pause.", typing: 0, pause: 900 },
+          { type: "me", text: "I needed a moment.", pause: 700 },
+          { type: "chapter-end" },
+        ],
+      },
+      {},
+      {},
+    );
+    const errors = result.issues.filter((issue) => issue.level === "error");
+
+    expect(errors).toEqual([]);
+    const explicitPause = result.cast.contacts.mai.script.find((step) => step.t === "msg" && step.from === "me");
+    expect(explicitPause?.t === "msg" ? explicitPause.pause : undefined).toBe(700);
+
+    const invalid = buildStory(
+      {
+        "mai/mai.json": { name: "Mai" },
+        "mai/chapter1.json": [
+          { type: "chapter", number: 1, text: "", time: "", at: "14:00" },
+          { type: "me", text: "Too fast.", pause: -1 },
+          { type: "chapter-end" },
+        ],
+      },
+      {},
+      {},
+    );
+    expect(invalid.issues.some((issue) => issue.level === "error" && issue.message.includes("milliseconds from 0 to 60000"))).toBe(true);
+  });
+
   test("requires exactly one remembered-value comparison in a gate", () => {
     const { issues } = buildStory(
       {

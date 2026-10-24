@@ -2,6 +2,14 @@
 
 Development notes for the game. Newest first.
 
+## 2026-10-24 — Length-aware message pacing
+
+- Added bounded, message-length-derived typing and pause defaults for character
+  messages, scripted player messages, choices, quiz answers, and photo captions.
+- Preserved explicit story timing overrides and applied the existing speed
+  multipliers to both defaults and overrides.
+- Added pacing and override validation tests; baseline commit: `9dbd606`.
+
 ## 2026-10-24 — Engine quality and author workflow
 
 - Installed project dependencies and added a Bun test suite plus CI checks.
@@ -15,6 +23,6 @@ Development notes for the game. Newest first.
   planning.
 - Rewrote Mai's sample as a five-chapter romance, expanded the locations to a
   Teahouse/Riverside scene chain, and set Vite's dev-server default to port 8080.
-- Final verification: `bun run check` passes with 19 tests, production build and
+- Final verification: `bun run check` passes with 22 tests, production build and
   offline precache succeed, and headless Chrome confirms the 375px game/Studio,
   restart cancellation, unlock flows, and offline reopen.
