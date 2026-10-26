@@ -7,13 +7,24 @@ import { App } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 
 import hiddenPhoto from "./assets/hidden.svg";
-import attractionIcon from "./assets/stat-attraction.svg";
 import bondIcon from "./assets/stat-bond.svg";
-import feelingsIcon from "./assets/stat-feelings.svg";
 import trustIcon from "./assets/stat-trust.svg";
 
 import type { Issue, StoryMeta } from "./story";
-import type { Cast, ChoiceOpt, Contact, Item, Place, PlaceChat, QuizQ, RevealFact, Stat, Stats, Step } from "./types";
+import type { Cast, ChoiceOpt, Contact, Item, Place, PlaceChat, QuizQ, RevealFact, Stat, Stats, Step, PlayerCharacter, CharacterType, CombatStatName } from "./types";
+import { COMBAT_STAT_NAMES } from "./types";
+import { requireElement, maybeElement } from "./dom";
+import * as Volume from "./volume";
+import * as Quickbar from "./quickbar";
+import { createPlayerCharacter as makePlayerCharacter, loadPlayerCharacter, savePlayerCharacter as persistPlayerCharacter } from "./player";
+import { renderCharactersView } from "./characters-view";
+import { renderPlacesView } from "./places-view";
+import { renderChatList } from "./chatlist-view";
+import { formatSaveTime as formatSaveTimeUtil, captureThreads as captureThreadsUtil } from "./save-utils";
+import { slotKey as slotKeyUtil, hasSave as hasSaveUtil, readSave as readSaveUtil, saveToSlot as saveToSlotUtil, applySave as applySaveUtil, loadFromSlot as loadFromSlotUtil, type SaveSlotsContext, type SaveThread } from "./save-slots";
+import { runCombatView, type CombatDeps } from "./combat-view";
+import { playerHit, enemyHit, weaponAttack, armorDefense, healAmount } from "./combat";
+import { createRng } from "./rng";
 import { STAT_MAX, STAT_START, matchesIfCondition } from "./types";
 import { createSounds } from "./sounds";
 import type { SoundConfig, SoundPlayer } from "./sounds";
@@ -28,15 +39,13 @@ import { messageDelays } from "./pacing";
 
 const STAT_META: { key: Stat; icon: string }[] = [
   { key: "trust", icon: trustIcon },
-  { key: "feelings", icon: feelingsIcon },
-  { key: "attraction", icon: attractionIcon },
-  { key: "bond", icon: bondIcon },
+  { key: "friendship", icon: bondIcon },
 ];
+const HOME_BACKGROUND_KEY = "sr-home-background";
+const DEFAULT_HOME_BACKGROUND = "system/default_background";
 const STAT_LABEL_KEYS: Record<Stat, UiKey> = {
   trust: "stat.trust",
-  feelings: "stat.feelings",
-  attraction: "stat.attraction",
-  bond: "stat.bond",
+  friendship: "stat.friendship",
 };
 
 /** The sound files and the config that maps events to them. */
@@ -70,25 +79,38 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
     placeOrder: PLACE_IDS,
     assets: IMG_URLS,
     gallery: GALLERY,
+    enemies: ENEMIES,
   } = cast;
 
-  const viewList = document.getElementById("view-list") as HTMLElement;
-  const viewChat = document.getElementById("view-chat") as HTMLElement;
-  const chatlist = document.getElementById("chatlist") as HTMLElement;
-  const logEl = document.getElementById("log") as HTMLElement;
-  const boxEl = document.getElementById("choices") as HTMLElement;
-  const choiceStatus = document.getElementById("choice-status") as HTMLElement;
-  const formEl = document.getElementById("bar") as HTMLFormElement;
-  const fieldEl = document.getElementById("field") as HTMLInputElement;
-  const sendEl = document.getElementById("send") as HTMLButtonElement;
-  const presenceEl = document.getElementById("presence") as HTMLElement;
-  const avatarEl = document.getElementById("avatar") as HTMLElement;
-  const chatnameEl = document.getElementById("chatname") as HTMLElement;
-  const backBtn = document.getElementById("back") as HTMLButtonElement;
-  const restartBtn = document.getElementById("restart") as HTMLButtonElement;
-  const restartDialog = document.getElementById("restart-confirm") as HTMLDialogElement;
-  const restartCancel = document.getElementById("restart-cancel") as HTMLButtonElement;
-  const restartConfirm = document.getElementById("restart-confirm-ok") as HTMLButtonElement;
+  const viewList = requireElement<HTMLElement>("view-list");
+  const viewChat = requireElement<HTMLElement>("view-chat");
+  const viewCombat = requireElement<HTMLElement>("view-combat");
+  const combatEnemyName = requireElement<HTMLElement>("combat-enemy-name");
+  const combatEnemyDesc = requireElement<HTMLElement>("combat-enemy-desc");
+  const combatEnemyHealth = requireElement<HTMLElement>("combat-enemy-health");
+  const combatPlayerHealth = requireElement<HTMLElement>("combat-player-health");
+  const combatLog = requireElement<HTMLElement>("combat-log");
+  const combatAttack = requireElement<HTMLButtonElement>("combat-attack");
+  const combatPotion = requireElement<HTMLButtonElement>("combat-potion");
+  const chatlist = requireElement<HTMLElement>("chatlist");
+  const logEl = requireElement<HTMLElement>("log");
+  const boxEl = requireElement<HTMLElement>("choices");
+  const choiceStatus = requireElement<HTMLElement>("choice-status");
+  const formEl = requireElement<HTMLFormElement>("bar");
+  const fieldEl = requireElement<HTMLInputElement>("field");
+  const sendEl = requireElement<HTMLButtonElement>("send");
+  const presenceEl = requireElement<HTMLElement>("presence");
+  const avatarEl = requireElement<HTMLElement>("avatar");
+  const chatnameEl = requireElement<HTMLElement>("chatname");
+  const backBtn = requireElement<HTMLButtonElement>("back");
+  const restartBtn = maybeElement<HTMLButtonElement>("restart");
+  const restartDialog = requireElement<HTMLDialogElement>("restart-confirm");
+  const deathDialog = requireElement<HTMLDialogElement>("death-confirm");
+  const deathLoad = requireElement<HTMLButtonElement>("death-load");
+  const deathRestart = requireElement<HTMLButtonElement>("death-restart");
+  const deathCancel = requireElement<HTMLButtonElement>("death-cancel");
+  const restartCancel = requireElement<HTMLButtonElement>("restart-cancel");
+  const restartConfirm = requireElement<HTMLButtonElement>("restart-confirm-ok");
 
   /**
    * A thread is anything the chat runner can play: a character chat or a
@@ -107,6 +129,7 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
     /** Place chats only. */
     unlocked?: boolean;
     done?: boolean;
+    visited?: boolean;
   };
 
   type Scene = { place: Place; chat: PlaceChat };
@@ -125,6 +148,8 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
     savedAt: string;
     /** Device-wide player name at the time of the snapshot. Optional for old saves. */
     playerName?: string;
+    /** The player character at the time of the snapshot. Optional for old saves. */
+    player?: PlayerCharacter | null;
     threads: Record<string, SaveThread>;
   };
 
@@ -147,6 +172,28 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
   });
 
   const runGate = new RunGate();
+  let combatDeps: CombatDeps;
+
+  function trapFocus(dialog: HTMLDialogElement): () => void {
+    const focusable = (): HTMLElement[] =>
+      [...dialog.querySelectorAll<HTMLElement>("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])")].filter((el) => !el.hasAttribute("disabled"));
+    const handler = (e: KeyboardEvent): void => {
+      if (e.key !== "Tab") return;
+      const list = focusable();
+      if (list.length === 0) return;
+      const first = list[0];
+      const last = list[list.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    dialog.addEventListener("keydown", handler);
+    return () => dialog.removeEventListener("keydown", handler);
+  }
   const pendingDelays = new Set<() => void>();
   let current: Thread | null = null;
   let cancelInteraction: (() => void) | null = null;
@@ -184,51 +231,19 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
   // effects. Each is a proportion of the story's own level, so a story that
   // ships quiet stays quiet at 100%. Like the text speed, the choice lives on
   // the device rather than in a save.
-  const VOLUME_DEFAULT = 100;
-  type VolumeKey = "master" | "ambient" | "effects";
-  const VOLUME_KEYS: Record<VolumeKey, string> = {
-    master: "sr-vol-master",
-    ambient: "sr-vol-ambient",
-    effects: "sr-vol-effects",
-  };
+  type VolumeKey = Volume.VolumeKey;
+  const VOLUME_KEYS = Volume.VOLUME_KEYS;
+  const VOLUME_DEFAULT = Volume.VOLUME_DEFAULT;
 
-  const readVolume = (key: VolumeKey): number => {
-    try {
-      const raw = storage.getItem(VOLUME_KEYS[key]);
-      const value = raw === null ? NaN : Number(raw);
-      if (Number.isInteger(value) && value >= 0 && value <= 100) return value;
-    } catch { /* ignore */ }
-    return VOLUME_DEFAULT;
-  };
-
-  // Sound used to be one switch. A player who had it off gets all three
-  // sliders at zero; everyone else keeps the defaults.
-  const migrateSound = (): void => {
-    try {
-      const legacy = storage.getItem("sr-sound");
-      if (legacy === null) return;
-      if (storage.getItem(VOLUME_KEYS.master) === null) {
-        const level = legacy === "off" ? 0 : VOLUME_DEFAULT;
-        for (const key of Object.values(VOLUME_KEYS)) storage.setItem(key, String(level));
-      }
-      storage.removeItem("sr-sound");
-    } catch { /* ignore */ }
-  };
-  migrateSound();
+  Volume.migrateSound(storage);
 
   const volumes: Record<VolumeKey, number> = {
-    master: readVolume("master"),
-    ambient: readVolume("ambient"),
-    effects: readVolume("effects"),
+    master: Volume.readVolume(storage, "master"),
+    ambient: Volume.readVolume(storage, "ambient"),
+    effects: Volume.readVolume(storage, "effects"),
   };
 
-  const applyVolumes = (): void => {
-    sounds.setVolumes({
-      master: volumes.master / 100,
-      ambient: volumes.ambient / 100,
-      effects: volumes.effects / 100,
-    });
-  };
+  const applyVolumes = (): void => Volume.applyVolumes(sounds, volumes);
   applyVolumes();
 
   // Pictures may bring a second, more revealing version (`nsfw_version` in a
@@ -243,6 +258,46 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
   // known arrives with the field filled in.
   let playerName = "";
   try { playerName = (storage.getItem("sr-name") ?? "").trim(); } catch { /* ignore */ }
+
+
+  let homeBackgroundName = DEFAULT_HOME_BACKGROUND;
+  try {
+    homeBackgroundName = storage.getItem(HOME_BACKGROUND_KEY) ?? DEFAULT_HOME_BACKGROUND;
+  } catch { /* story default remains available for this session */ }
+
+  const DEFAULT_QUICKBAR = Quickbar.DEFAULT_QUICKBAR;
+  let quickbarSections: string[] = Quickbar.loadQuickbar(storage);
+
+  const QUICKBAR_OPTIONS: { key: string; label: string; btn: string }[] = [
+    { key: "list", label: "Chats", btn: "tab-chats" },
+    { key: "places", label: "Locations", btn: "tab-places" },
+    { key: "gallery", label: "Gallery", btn: "tab-gallery" },
+    { key: "chars", label: "Characters", btn: "tab-chars" },
+    { key: "settings", label: "Settings", btn: "tab-settings" },
+  ];
+
+  function applyQuickbar(): void {
+    const set = new Set(quickbarSections);
+    for (const opt of QUICKBAR_OPTIONS) {
+      const btn = maybeElement<HTMLButtonElement>(opt.btn);
+      if (!btn) continue;
+      btn.style.display = set.has(opt.key) ? "" : "none";
+    }
+  }
+
+  let playerCharacter: PlayerCharacter | null = loadPlayerCharacter(storage);
+
+  function createPlayerCharacter(name: string, type: CharacterType, rank = "None"): PlayerCharacter {
+    const pc = makePlayerCharacter(name, type, rank);
+    playerCharacter = pc;
+    persistPlayerCharacter(storage, pc);
+    try { renderCharacters(); } catch { /* ignore */ }
+    return pc;
+  }
+
+  function savePlayerCharacter(pc: PlayerCharacter): void {
+    persistPlayerCharacter(storage, pc);
+  }
 
   // Browsers only allow audio after a gesture, so the first tap unlocks it.
   const unlockSound = (): void => sounds.unlock();
@@ -409,6 +464,45 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
 
   const saveChat = (c: Contact): void => saveThread(contactThread(c));
 
+  const doAutosave = (): void => {
+    try {
+      const threads: Record<string, unknown> = {};
+      for (const id of ORDER_IDS) {
+        threads[CONTACTS[id].storeKey] = CONTACTS[id].data;
+      }
+      for (const place of Object.values(PLACES)) {
+        for (const chat of place.chats) threads[chat.storeKey] = chat.data;
+      }
+      const snap = {
+        savedAt: new Date().toISOString(),
+        playerName,
+        threads,
+      };
+      storage.setItem("sr-autosave", JSON.stringify(snap));
+    } catch { /* ignore */ }
+  };
+
+  function loadAutosave(): void {
+    try {
+      const raw = storage.getItem("sr-autosave");
+      if (!raw) { window.location.reload(); return; }
+      const snap = JSON.parse(raw) as { threads?: Record<string, unknown> };
+      if (snap.threads) {
+        for (const [key, value] of Object.entries(snap.threads)) {
+          storage.setItem(key, JSON.stringify(value));
+        }
+      }
+    } catch { /* ignore */ }
+    window.location.reload();
+  }
+  function restartGame(): void {
+    try {
+      // clear game keys
+      storage.clear();
+    } catch { /* ignore */ }
+    window.location.reload();
+  }
+
   const loadThread = (t: Thread): void => {
     try {
       const raw = storage.getItem(t.storeKey);
@@ -423,6 +517,8 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
       if (t.scene) {
         t.data.unlocked = saved.unlocked ?? t.scene.chat.startUnlocked;
         t.data.done = saved.done === true;
+        t.data.visited = saved.visited === true || saved.done === true ||
+          (saved.transcript?.length ?? 0) > 0 || (saved.queue?.length ?? 0) > 0;
       }
       if (t.contact) {
         t.contact.data.name = saved.name ?? t.contact.name;
@@ -459,6 +555,16 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
       row.innerHTML = `<div class="bubble-in mx-auto w-fit max-w-[90%] rounded-lg bg-chat-800 px-3 py-1 text-center text-xs text-ink-300">${html}${when}</div>`;
       return row;
     }
+    if (from === "narrator") {
+      const when = item.pinned && item.time ? ` · ${esc(item.time)}` : "";
+      row.innerHTML = `<div class="bubble-in mx-auto w-fit max-w-[90%] rounded-lg bg-chat-700/60 px-3 py-1 text-center text-xs italic text-ink-200">${html}${when}</div>`;
+      return row;
+    }
+    if (from === "thought") {
+      row.className = "bubble-in flex justify-end";
+      row.innerHTML = `<div class="max-w-[80%] rounded-2xl rounded-tr-md bg-chat-700/60 px-3 py-2 text-[15px] italic text-ink-100">${html}</div>`;
+      return row;
+    }
     const big = !scene && isBigEmoji(html) && from === "them";
     const side = from === "me" ? "justify-end" : "justify-start";
     const color = from === "me" ? "bg-out-600 rounded-tr-md" : "bg-chat-800 rounded-tl-md";
@@ -467,7 +573,7 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
         ? `<span class="mb-0.5 block text-xs font-semibold text-tick-400">${esc(item.speaker)}</span>`
         : "";
     // The story time sits inside the bubble, next to the read tick.
-    const meta = `<span class="mt-1 block text-right text-xs text-ink-300">${item.time ?? ""}${from === "me" ? ' <span class="ticks">✓</span>' : ""}</span>`;
+    const meta = ``;
     const body = big
       ? `<span class="text-5xl">${html}</span>`
       : `${label}<span>${html}</span>${meta}`;
@@ -568,7 +674,7 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
     const side = from === "me" ? "justify-end" : "justify-start";
     const color = from === "me" ? "bg-out-600 rounded-tr-md" : "bg-chat-800 rounded-tl-md";
     const caption = item.text ? `<span class="block px-1 pt-1 text-[15px]">${esc(fill(t, item.text))}</span>` : "";
-    const meta = `<span class="block px-1 pb-0.5 pt-1 text-right text-xs text-ink-300">${item.time ?? ""}${from === "me" ? ' <span class="ticks">✓</span>' : ""}</span>`;
+    const meta = ``;
     const row = document.createElement("div");
     row.className = `bubble-in flex ${side}`;
     // The picture sits in a button so it can be opened full size with a tap,
@@ -577,7 +683,7 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
     const shot = row.querySelector("button") as HTMLButtonElement;
     shot.addEventListener("click", () => {
       const where = t.contact ? t.contact.data.name : t.scene?.place.name ?? "";
-      openPhoto(url, alt, `${item.text ? item.text + " · " : ""}${where}${item.time ? " · " + item.time : ""}`, shot);
+      openPhoto(url, alt, `${item.text ? item.text + " · " : ""}${where}${item.time ? " · " + item.time : ""}`, shot, name);
     });
     if (instant && from === "me") {
       const ticks = row.querySelector(".ticks");
@@ -876,7 +982,7 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
     try { storage.setItem("sr-nsfw", "0"); } catch { /* ignore */ }
   }
   let refreshChoices: (() => void) | null = null;
-  const STAT_COLORS: Record<Stat, string> = { trust: "#60a5fa", feelings: "#fb7185", attraction: "#fbbf24", bond: "#34d399" };
+  const STAT_COLORS: Record<Stat, string> = { trust: "#60a5fa", friendship: "#34d399" };
 
   function effectLine(eff: Partial<Stats> | undefined): string {
     if (!eff) return "";
@@ -1107,6 +1213,7 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
     if (step.nsfw && !nsfwMode) return;
     if (step.t === "chapter") {
       postChapter(t, step);
+      doAutosave();
       if (!(await showFadeCard(chapterCard(t, step), myGen))) return;
     } else if (step.t === "divider") {
       if (step.style === "fade") {
@@ -1151,6 +1258,20 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
       } else {
         t.data.state[step.key] = step.value;
         saveThread(t);
+      }
+      if (step.key === "class" || step.key === "playerClass") {
+        createPlayerCharacter(playerName || "Hero", step.value as CharacterType);
+      }
+      if (step.key === "potions") {
+        const v = Number(step.value);
+        if (Number.isFinite(v) && playerCharacter) { playerCharacter.inventory.potions = v; if (playerCharacter) savePlayerCharacter(playerCharacter); }
+      }
+      if (step.key === "rank") {
+        if (playerCharacter) { playerCharacter.rank = step.value; if (playerCharacter) savePlayerCharacter(playerCharacter); }
+      }
+      if (step.key === "addPotions") {
+        const v = Number(step.value);
+        if (Number.isFinite(v) && playerCharacter) { playerCharacter.inventory.potions += v; if (playerCharacter) savePlayerCharacter(playerCharacter); }
       }
     } else if (step.t === "reveal") {
       if (t.contact) {
@@ -1233,6 +1354,17 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
       await askChoice(t, myGen, step.opts);
     } else if (step.t === "ask") {
       await askText(t, myGen, step.key, step.placeholder, step.effects);
+    } else if (step.t === "thought") {
+      post(t, "thought", step.text, undefined, step.at, step.duration);
+      await beat(step.pause ?? messageDelays(step.text).pause);
+    } else if (step.t === "narrate") {
+      post(t, "narrator", step.text, undefined, step.at, step.duration);
+      await beat(step.pause ?? messageDelays(step.text).pause);
+    } else if (step.t === "autosave") {
+      doAutosave();
+    } else if (step.t === "combat") {
+      doAutosave();
+      await runCombatView(combatDeps, t, myGen, step.enemy);
     }
   }
 
@@ -1253,17 +1385,14 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
   }
 
   function renderList(): void {
-    chatlist.innerHTML = "";
-    let shown = 0;
-    for (const id of ORDER_IDS) {
-      if (CONTACTS[id].dev && !devMode) continue;
-      if (!CONTACTS[id].data.unlocked) continue;
-      renderListRow(id);
-      shown++;
-    }
-    if (shown === 0 && issues.length === 0) {
-      chatlist.innerHTML = `<p class="rounded-2xl bg-chat-800 p-6 text-center text-sm text-ink-300">No chats yet — add a character file in src/story/characters/ 💬</p>`;
-    }
+    renderChatList({
+      chatlist,
+      order: ORDER_IDS,
+      contacts: CONTACTS,
+      devMode,
+      renderRow: renderListRow,
+      issuesLength: issues.length,
+    });
   }
 
   function renderListRow(id: string): void {
@@ -1359,7 +1488,7 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
     hideView(viewPlaces);
     viewChat.classList.remove("hidden");
     viewChat.classList.add("flex");
-    tabsEl.classList.add("hidden");
+    hideTabs();
     formEl.style.display = "none";
     scroll();
     if (t.scene && t.data.queue.length === 0) showSceneEnd(t);
@@ -1413,68 +1542,88 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
     await runChat(t, myGen);
   }
 
-  const tabsEl = document.getElementById("tabs") as HTMLElement;
-  const tabChats = document.getElementById("tab-chats") as HTMLButtonElement;
-  const tabPlaces = document.getElementById("tab-places") as HTMLButtonElement;
-  const tabGallery = document.getElementById("tab-gallery") as HTMLButtonElement;
-  const tabSettings = document.getElementById("tab-settings") as HTMLButtonElement;
-  const viewGallery = document.getElementById("view-gallery") as HTMLElement;
-  const viewPlaces = document.getElementById("view-places") as HTMLElement;
-  const placeList = document.getElementById("placelist") as HTMLElement;
-  const tabChars = document.getElementById("tab-chars") as HTMLButtonElement;
-  const viewChars = document.getElementById("view-chars") as HTMLElement;
-  const charGrid = document.getElementById("chargrid") as HTMLElement;
-  const viewProfile = document.getElementById("view-profile") as HTMLElement;
-  const whoBtn = document.getElementById("who") as HTMLButtonElement;
-  const profileBack = document.getElementById("profile-back") as HTMLButtonElement;
-  const profileAvatar = document.getElementById("profile-avatar") as HTMLElement;
-  const profileName = document.getElementById("profile-name") as HTMLElement;
-  const profileAge = document.getElementById("profile-age") as HTMLElement;
-  const profileBirthday = document.getElementById("profile-birthday") as HTMLElement;
-  const profileTag = document.getElementById("profile-tag") as HTMLElement;
-  const profileStats = document.getElementById("profile-stats") as HTMLElement;
-  const profileInterests = document.getElementById("profile-interests") as HTMLElement;
-  const profileLikes = document.getElementById("profile-likes") as HTMLElement;
-  const profileDislikes = document.getElementById("profile-dislikes") as HTMLElement;
-  const secInterests = document.getElementById("sec-interests") as HTMLElement;
-  const secLikes = document.getElementById("sec-likes") as HTMLElement;
-  const secDislikes = document.getElementById("sec-dislikes") as HTMLElement;
-  const profileChat = document.getElementById("profile-chat") as HTMLButtonElement;
-  const viewSettings = document.getElementById("view-settings") as HTMLElement;
-  const galleryList = document.getElementById("gallery-list") as HTMLElement;
-  const galleryCount = document.getElementById("gallery-count") as HTMLElement;
-  const saveOpen = document.getElementById("save-open") as HTMLButtonElement;
-  const loadOpen = document.getElementById("load-open") as HTMLButtonElement;
-  const savePanel = document.getElementById("save-panel") as HTMLElement;
-  const savePanelTitle = document.getElementById("save-panel-title") as HTMLElement;
-  const savePanelNote = document.getElementById("save-panel-note") as HTMLElement;
-  const saveSlots = document.getElementById("save-slots") as HTMLElement;
-  const saveConfirm = document.getElementById("save-confirm") as HTMLElement;
-  const saveConfirmText = document.getElementById("save-confirm-text") as HTMLElement;
-  const saveConfirmOk = document.getElementById("save-confirm-ok") as HTMLButtonElement;
-  const saveConfirmCancel = document.getElementById("save-confirm-cancel") as HTMLButtonElement;
-  const saveStatus = document.getElementById("save-status") as HTMLElement;
-  const saveClose = document.getElementById("save-close") as HTMLButtonElement;
-  const backupExport = document.getElementById("backup-export") as HTMLButtonElement;
-  const backupImport = document.getElementById("backup-import") as HTMLInputElement;
-  const backupStatus = document.getElementById("backup-status") as HTMLElement;
-  const backupDialog = document.getElementById("backup-confirm") as HTMLDialogElement;
-  const backupConfirmText = document.getElementById("backup-confirm-text") as HTMLElement;
-  const backupCancel = document.getElementById("backup-cancel") as HTMLButtonElement;
-  const backupConfirm = document.getElementById("backup-confirm-ok") as HTMLButtonElement;
-  const delArm = document.getElementById("del-arm") as HTMLButtonElement;
-  const lightbox = document.getElementById("lightbox") as HTMLElement;
-  const lightboxImg = document.getElementById("lightbox-img") as HTMLImageElement;
-  const lightboxCap = document.getElementById("lightbox-cap") as HTMLElement;
-  const lightboxPos = document.getElementById("lightbox-pos") as HTMLElement;
-  const lightboxPrev = document.getElementById("lightbox-prev") as HTMLButtonElement;
-  const lightboxNext = document.getElementById("lightbox-next") as HTMLButtonElement;
-  const lightboxClose = document.getElementById("lightbox-close") as HTMLButtonElement;
+  const viewHome = requireElement<HTMLElement>("view-home");
+  const homeWallpaper = requireElement<HTMLImageElement>("home-wallpaper");
+  const homeTime = requireElement<HTMLElement>("home-time");
+  const homeStoryTitle = requireElement<HTMLElement>("home-story-title");
+  const tabsEl = requireElement<HTMLElement>("tabs");
+  const tabChats = requireElement<HTMLButtonElement>("tab-chats");
+  const tabPlaces = requireElement<HTMLButtonElement>("tab-places");
+  const tabGallery = requireElement<HTMLButtonElement>("tab-gallery");
+  const tabChars = requireElement<HTMLButtonElement>("tab-chars");
+  const tabSettings = requireElement<HTMLButtonElement>("tab-settings");
+  const viewGallery = requireElement<HTMLElement>("view-gallery");
+  const viewPlaces = requireElement<HTMLElement>("view-places");
+  const placeList = requireElement<HTMLElement>("placelist");
+  const placesStatus = requireElement<HTMLElement>("places-status");
+  const viewChars = requireElement<HTMLElement>("view-chars");
+  const charGrid = requireElement<HTMLElement>("chargrid");
+  const viewProfile = requireElement<HTMLElement>("view-profile");
+  const viewPlayer = requireElement<HTMLElement>("view-player");
+  const playerBack = requireElement<HTMLButtonElement>("player-back");
+  const playerNameEl = requireElement<HTMLElement>("player-name");
+  const playerTypeEl = requireElement<HTMLElement>("player-type");
+  const playerCombatEl = requireElement<HTMLElement>("player-combat");
+  const playerEquipmentEl = requireElement<HTMLElement>("player-equipment");
+  const playerInventoryEl = requireElement<HTMLElement>("player-inventory");
+  const whoBtn = requireElement<HTMLButtonElement>("who");
+  const profileBack = requireElement<HTMLButtonElement>("profile-back");
+  const profileAvatar = requireElement<HTMLElement>("profile-avatar");
+  const profileName = requireElement<HTMLElement>("profile-name");
+  const profileAge = requireElement<HTMLElement>("profile-age");
+  const profileBirthday = requireElement<HTMLElement>("profile-birthday");
+  const profileTag = requireElement<HTMLElement>("profile-tag");
+  const profileStats = requireElement<HTMLElement>("profile-stats");
+  const profileInterests = requireElement<HTMLElement>("profile-interests");
+  const profileLikes = requireElement<HTMLElement>("profile-likes");
+  const profileDislikes = requireElement<HTMLElement>("profile-dislikes");
+  const secInterests = requireElement<HTMLElement>("sec-interests");
+  const secLikes = requireElement<HTMLElement>("sec-likes");
+  const secDislikes = requireElement<HTMLElement>("sec-dislikes");
+  const profileChat = requireElement<HTMLButtonElement>("profile-chat");
+  const viewSettings = requireElement<HTMLElement>("view-settings");
+  const resetHomeBackground = requireElement<HTMLButtonElement>("home-background-reset");
+  const settingsBackgroundStatus = requireElement<HTMLElement>("settings-background-status");
+  const quickbarOptions = requireElement<HTMLElement>("quickbar-options");
+  const quickbarToggle = requireElement<HTMLButtonElement>("quickbar-toggle");
+  const quickbarPanel = requireElement<HTMLElement>("quickbar-panel");
+  const quickbarTriangle = requireElement<HTMLElement>("quickbar-triangle");
+  const galleryList = requireElement<HTMLElement>("gallery-list");
+  const galleryCount = requireElement<HTMLElement>("gallery-count");
+  const saveOpen = requireElement<HTMLButtonElement>("save-open");
+  const loadOpen = requireElement<HTMLButtonElement>("load-open");
+  const savePanel = requireElement<HTMLElement>("save-panel");
+  const savePanelTitle = requireElement<HTMLElement>("save-panel-title");
+  const savePanelNote = requireElement<HTMLElement>("save-panel-note");
+  const saveSlots = requireElement<HTMLElement>("save-slots");
+  const saveConfirm = requireElement<HTMLElement>("save-confirm");
+  const saveConfirmText = requireElement<HTMLElement>("save-confirm-text");
+  const saveConfirmOk = requireElement<HTMLButtonElement>("save-confirm-ok");
+  const saveConfirmCancel = requireElement<HTMLButtonElement>("save-confirm-cancel");
+  const saveStatus = requireElement<HTMLElement>("save-status");
+  const saveClose = requireElement<HTMLButtonElement>("save-close");
+  const backupExport = requireElement<HTMLButtonElement>("backup-export");
+  const backupImport = requireElement<HTMLInputElement>("backup-import");
+  const backupStatus = requireElement<HTMLElement>("backup-status");
+  const backupDialog = requireElement<HTMLDialogElement>("backup-confirm");
+  const backupConfirmText = requireElement<HTMLElement>("backup-confirm-text");
+  const backupCancel = requireElement<HTMLButtonElement>("backup-cancel");
+  const backupConfirm = requireElement<HTMLButtonElement>("backup-confirm-ok");
+  const delArm = requireElement<HTMLButtonElement>("del-arm");
+  const lightbox = requireElement<HTMLElement>("lightbox");
+  const lightboxImg = requireElement<HTMLImageElement>("lightbox-img");
+  const lightboxCap = requireElement<HTMLElement>("lightbox-cap");
+  const lightboxPos = requireElement<HTMLElement>("lightbox-pos");
+  const lightboxPrev = requireElement<HTMLButtonElement>("lightbox-prev");
+  const lightboxNext = requireElement<HTMLButtonElement>("lightbox-next");
+  const lightboxClose = requireElement<HTMLButtonElement>("lightbox-close");
+  const lightboxBackground = requireElement<HTMLButtonElement>("lightbox-background");
+  const lightboxBackgroundStatus = requireElement<HTMLElement>("lightbox-background-status");
 
-  const TAB_ON = "flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-xs font-bold text-tick-400";
-  const TAB_OFF = "flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-xs font-bold text-ink-300";
+  const TAB_ON = "flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 text-xs font-bold text-tick-400";
+  const TAB_OFF = "flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 text-xs font-bold text-ink-300";
 
-  function showTabs(active: HTMLButtonElement): void {
+  function showTabs(active: HTMLButtonElement | null): void {
     tabsEl.classList.remove("hidden");
     for (const btn of [tabChats, tabPlaces, tabGallery, tabChars, tabSettings]) {
       const on = btn === active;
@@ -1484,17 +1633,38 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
     }
   }
 
+  function hideTabs(): void {
+    tabsEl.classList.add("hidden");
+  }
+
   function hideView(el: HTMLElement): void {
     el.classList.add("hidden");
     el.classList.remove("flex");
   }
 
-  let profileReturn: "chat" | "chars" = "chat";
+  let profileReturn: "chat" | "places" | "chars" = "chat";
 
-  function showSection(which: "list" | "places" | "gallery" | "chars" | "settings"): void {
+  type SectionName = "home" | "list" | "places" | "gallery" | "chars" | "settings";
+  const isSectionName = (value: string | undefined): value is SectionName =>
+    value === "home" || value === "list" || value === "places" || value === "gallery" ||
+    value === "chars" || value === "settings";
+
+  function updateHomeClock(): void {
+    homeTime.textContent = new Intl.DateTimeFormat(undefined, {
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(new Date());
+  }
+
+  homeStoryTitle.textContent = story.title ?? document.title;
+  updateHomeClock();
+  window.setInterval(updateHomeClock, 60_000);
+
+  function showSection(which: SectionName): void {
     cancelRun();
     refreshChoices = null;
     cancelPendingInteraction();
+    hideView(viewHome);
     hideView(viewChat);
     hideView(viewGallery);
     hideView(viewPlaces);
@@ -1503,6 +1673,7 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
     hideView(viewChars);
     hideView(viewProfile);
     const map = {
+      home: viewHome,
       list: viewList,
       places: viewPlaces,
       gallery: viewGallery,
@@ -1511,17 +1682,17 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
     } as const;
     map[which].classList.remove("hidden");
     map[which].classList.add("flex");
-    showTabs(
-      which === "list"
-        ? tabChats
-        : which === "places"
-          ? tabPlaces
-          : which === "gallery"
-            ? tabGallery
-            : which === "chars"
-              ? tabChars
-              : tabSettings,
-    );
+    const activeTab = which === "list"
+      ? tabChats
+      : which === "places"
+        ? tabPlaces
+        : which === "gallery"
+          ? tabGallery
+          : which === "settings"
+            ? tabSettings
+            : null;
+    showTabs(activeTab);
+    if (which === "home") updateHomeClock();
     if (which === "list") renderList();
     if (which === "places") renderPlaces();
     if (which === "gallery") renderGallery();
@@ -1531,45 +1702,34 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
     current = null;
   }
 
+
+
+  function sceneVisited(chat: PlaceChat): boolean {
+    return chat.data.visited === true || chat.data.done || chat.data.transcript.length > 0 || chat.data.queue.length > 0;
+  }
+
+  function enterPlace(place: Place, chat: PlaceChat): void {
+    if (!sceneVisited(chat)) {
+      chat.data.visited = true;
+      saveThread(sceneThread(place, chat));
+    }
+    placesStatus.textContent = "";
+    openThread(sceneThread(place, chat));
+  }
+
   function renderPlaces(): void {
-    placeList.innerHTML = "";
-    let shown = 0;
-    for (const placeId of PLACE_IDS) {
-      const place = PLACES[placeId];
-      if (place.dev && !devMode) continue;
-      const chats = place.chats.filter((chat) => chat.data.unlocked);
-      if (chats.length === 0) continue;
-      shown++;
-
-      const section = document.createElement("section");
-      section.className = "space-y-1";
-      const heading = document.createElement("div");
-      heading.className = "px-2 pt-1";
-      heading.innerHTML =
-        `<h2 class="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-tick-400"><span aria-hidden="true" class="text-lg">${esc(place.icon)}</span>${esc(place.name)}</h2>` +
-        (place.teaser ? `<p class="mt-1 text-xs text-ink-300">${esc(place.teaser)}</p>` : "");
-      section.appendChild(heading);
-
-      for (const chat of chats) {
-        const done = chat.data.done;
-        const fresh = chat.data.transcript.length === 0;
-        const row = document.createElement("button");
-        row.type = "button";
-        row.className = "flex w-full items-start gap-3 rounded-2xl p-3 text-left hover:bg-chat-800" + (done ? " opacity-70" : "");
-        row.setAttribute("aria-label", `Open ${chat.title}${done ? " (already read)" : ""}`);
-        row.innerHTML =
-          `<span aria-hidden="true" class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${done ? "bg-chat-700 text-tick-400" : "bg-chat-800 text-lg"}">${done ? "✓" : esc(place.icon)}</span>` +
-          `<span class="min-w-0 flex-1"><span class="flex items-baseline justify-between gap-2"><span class="truncate font-semibold ${done ? "text-ink-300" : ""}">${esc(chat.title)}</span>` +
-          `${fresh ? `<span class="shrink-0 rounded-full bg-out-600 px-2 py-0.5 text-xs font-bold text-white">${esc(tr("state.new"))}</span>` : ""}</span>` +
-          `<span class="mt-0.5 block text-sm text-ink-300">${esc(chat.teaser)}</span></span>`;
-        row.addEventListener("click", () => openThread(sceneThread(place, chat)));
-        section.appendChild(row);
-      }
-      placeList.appendChild(section);
-    }
-    if (shown === 0 && issues.length === 0) {
-      placeList.innerHTML = `<p class="rounded-2xl bg-chat-800 p-6 text-center text-sm text-ink-300">No places yet — add a file in src/story/locations/ 📍</p>`;
-    }
+    renderPlacesView({
+      placeList,
+      placesStatus,
+      placeOrder: PLACE_IDS,
+      places: PLACES,
+      devMode,
+      sceneVisited,
+      enterPlace,
+      esc,
+      tr,
+      issuesLength: issues.length,
+    });
   }
 
   /** Pictures already in a transcript, keyed by asset name. */
@@ -1594,7 +1754,44 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
     return out;
   }
 
-  type GalleryEntry = { url: string; alt: string; caption: string };
+  function seenGalleryAssetNames(): Set<string> {
+    const names = new Set<string>();
+    for (const item of revealedPhotos().values()) {
+      const name = pictureName(item.img);
+      if (name && IMG_URLS[name]) names.add(name);
+    }
+    for (const id of ORDER_IDS) {
+      const contact = CONTACTS[id];
+      if (contact.data.unlocked && contact.avatar && IMG_URLS[contact.avatar]) {
+        names.add(contact.avatar);
+      }
+    }
+    return names;
+  }
+
+  function setHomeBackground(name: string): boolean {
+    if (name !== DEFAULT_HOME_BACKGROUND && !seenGalleryAssetNames().has(name)) return false;
+    const url = IMG_URLS[name];
+    if (!url) return false;
+    homeBackgroundName = name;
+    homeWallpaper.src = url;
+    try { storage.setItem(HOME_BACKGROUND_KEY, name); } catch { /* keep the selected image for this session */ }
+    return true;
+  }
+
+  function initializeHomeBackground(): void {
+    if (setHomeBackground(homeBackgroundName)) return;
+    homeBackgroundName = DEFAULT_HOME_BACKGROUND;
+    if (!setHomeBackground(DEFAULT_HOME_BACKGROUND)) homeWallpaper.removeAttribute("src");
+  }
+
+  type GalleryEntry = {
+    url: string;
+    alt: string;
+    caption: string;
+    backgroundName: string;
+    canSetBackground: boolean;
+  };
   let galleryFlat: GalleryEntry[] = [];
   let galleryTiles: HTMLButtonElement[] = [];
   let lightboxIndex = -1;
@@ -1680,6 +1877,8 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
           url: ph.isRevealed ? (IMG_URLS[ph.shownName] ?? "") : hiddenPhoto,
           alt: ph.alt,
           caption: ph.caption,
+          backgroundName: ph.shownName,
+          canSetBackground: ph.isRevealed,
         });
         galleryTiles.push(b);
       }
@@ -1697,6 +1896,8 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
     lightboxPos.textContent = `${lightboxIndex + 1} / ${galleryFlat.length}`;
     lightboxPrev.disabled = lightboxIndex === 0;
     lightboxNext.disabled = lightboxIndex === galleryFlat.length - 1;
+    lightboxBackground.classList.toggle("hidden", !ph.canSetBackground || !IMG_URLS[ph.backgroundName]);
+    lightboxBackgroundStatus.textContent = "";
   }
 
   function showLightbox(): void {
@@ -1713,8 +1914,8 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
   }
 
   /** A chat bubble is a one-picture session, not part of the Gallery paging. */
-  function openPhoto(url: string, alt: string, caption: string, opener: HTMLButtonElement): void {
-    galleryFlat = [{ url, alt, caption }];
+  function openPhoto(url: string, alt: string, caption: string, opener: HTMLButtonElement, backgroundName: string): void {
+    galleryFlat = [{ url, alt, caption, backgroundName, canSetBackground: true }];
     galleryTiles = [opener];
     lightboxIndex = 0;
     paintLightbox();
@@ -1740,6 +1941,12 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
   lightboxPrev.addEventListener("click", () => navigateLightbox(-1));
   lightboxNext.addEventListener("click", () => navigateLightbox(1));
   lightboxClose.addEventListener("click", closeLightbox);
+  lightboxBackground.addEventListener("click", () => {
+    const image = galleryFlat[lightboxIndex];
+    if (!image?.canSetBackground || !setHomeBackground(image.backgroundName)) return;
+    lightboxBackgroundStatus.textContent = tr("gallery.backgroundSaved");
+    settingsBackgroundStatus.textContent = tr("gallery.backgroundSaved");
+  });
   document.addEventListener("keydown", (e) => {
     if (lightbox.classList.contains("hidden")) return;
     if (e.key === "Escape") {
@@ -1749,7 +1956,7 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
     if (e.key === "Tab") {
       const focusable = Array.from(
         lightbox.querySelectorAll<HTMLElement>(
-          'button:not(:disabled), a[href], input:not(:disabled), [tabindex]:not([tabindex="-1"])',
+          'button:not(:disabled):not(.hidden), a[href], input:not(:disabled), [tabindex]:not([tabindex="-1"])',
         ),
       );
       const first = focusable[0];
@@ -1811,63 +2018,7 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
   let saveMode: SaveMode | null = null;
   let pendingSave: PendingSave | null = null;
 
-  const slotKey = (slot: number): string => `${SAVE_KEY}${slot}`;
-
-  function hasSave(slot: number): boolean {
-    try {
-      return storage.getItem(slotKey(slot)) !== null;
-    } catch {
-      return false;
-    }
-  }
-
-  function readSave(slot: number): SaveFile | null {
-    try {
-      const raw = storage.getItem(slotKey(slot));
-      if (!raw) return null;
-      const parsed: unknown = JSON.parse(raw);
-      if (!parsed || typeof parsed !== "object") return null;
-      const candidate = parsed as Partial<SaveFile>;
-      if (
-        candidate.version !== 1 ||
-        typeof candidate.savedAt !== "string" ||
-        (candidate.playerName !== undefined && typeof candidate.playerName !== "string") ||
-        !candidate.threads ||
-        typeof candidate.threads !== "object" ||
-        Array.isArray(candidate.threads)
-      ) {
-        return null;
-      }
-      return candidate as SaveFile;
-    } catch {
-      return null;
-    }
-  }
-
-  function formatSaveTime(iso: string): string {
-    const date = new Date(iso);
-    if (Number.isNaN(date.getTime())) return "Unknown time";
-    return date.toLocaleString(story.lang, {
-      day: "numeric",
-      month: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
-
-  function captureThreads(): Record<string, SaveThread> {
-    const threads: Record<string, SaveThread> = {};
-    for (const id of ORDER_IDS) {
-      const contact = CONTACTS[id];
-      threads[contact.storeKey] = structuredClone(contact.data);
-    }
-    for (const placeId of PLACE_IDS) {
-      for (const chat of PLACES[placeId].chats) {
-        threads[chat.storeKey] = structuredClone(chat.data);
-      }
-    }
-    return threads;
-  }
+  const slotKey = slotKeyUtil;
 
   function setSaveStatus(text: string, error = false): void {
     saveStatus.textContent = text;
@@ -1879,9 +2030,9 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
     if (!saveMode) return;
 
     for (let slot = 1; slot <= SAVE_SLOTS; slot++) {
-      const save = readSave(slot);
-      const occupied = hasSave(slot);
-      const time = save ? formatSaveTime(save.savedAt) : occupied ? "Unreadable save" : "Empty";
+      const save = readSaveUtil(saveCtx, slot);
+      const occupied = hasSaveUtil(saveCtx, slot);
+      const time = save ? formatSaveTimeUtil(save.savedAt, story.lang) : occupied ? "Unreadable save" : "Empty";
       const enabled = saveMode === "save" || save !== null;
       const action = saveMode === "save" ? (save || occupied ? "Overwrite" : "Save") : "Load";
 
@@ -1939,9 +2090,9 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
     saveConfirm.classList.add("hidden");
 
     if (saveMode === "save") {
-      if (hasSave(slot)) {
-        const existing = readSave(slot);
-        const when = existing ? formatSaveTime(existing.savedAt) : null;
+      if (hasSaveUtil(saveCtx, slot)) {
+        const existing = readSaveUtil(saveCtx, slot);
+        const when = existing ? formatSaveTimeUtil(existing.savedAt, story.lang) : null;
         askSaveConfirm(
           "save",
           slot,
@@ -1951,132 +2102,21 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
             : `Slot ${slot} already has a save that can't be read. Overwrite it with your current progress?`,
         );
       } else {
-        saveToSlot(slot);
+        saveToSlotUtil(saveCtx, slot);
       }
       return;
     }
 
     if (saveMode === "load") {
-      const save = readSave(slot);
+      const save = readSaveUtil(saveCtx, slot);
       if (!save) return;
       askSaveConfirm(
         "load",
         slot,
         trigger,
-        `Load the save from ${formatSaveTime(save.savedAt)}? Your current progress will be replaced.`,
+        `Load the save from ${formatSaveTimeUtil(save.savedAt, story.lang)}? Your current progress will be replaced.`,
       );
     }
-  }
-
-  function saveToSlot(slot: number): boolean {
-    const save: SaveFile = {
-      version: 1,
-      savedAt: new Date().toISOString(),
-      playerName,
-      threads: captureThreads(),
-    };
-    try {
-      storage.setItem(slotKey(slot), JSON.stringify(save));
-    } catch {
-      setSaveStatus("Could not save — storage is full or blocked.", true);
-      return false;
-    }
-    setSaveStatus(`Saved to slot ${slot}.`);
-    renderSaveSlots();
-    savePanelTitle.focus();
-    return true;
-  }
-
-  function applySave(save: SaveFile): void {
-    cancelRun();
-    cancelPendingInteraction();
-    current = null;
-    refreshChoices = null;
-
-    for (const id of ORDER_IDS) {
-      const contact = CONTACTS[id];
-      const saved = save.threads[contact.storeKey];
-      const state =
-        saved?.state && typeof saved.state === "object" && !Array.isArray(saved.state)
-          ? saved.state
-          : {};
-      contact.data = {
-        transcript: Array.isArray(saved?.transcript) ? saved.transcript : [],
-        queue: Array.isArray(saved?.queue) ? saved.queue : [],
-        state,
-        name: typeof saved?.name === "string" ? saved.name : contact.name,
-        initial: typeof saved?.initial === "string" ? saved.initial : contact.initial,
-        unlocked:
-          typeof saved?.unlocked === "boolean" ? saved.unlocked : contact.startUnlocked,
-        stats:
-          saved?.stats && typeof saved.stats === "object"
-            ? { ...STAT_START, ...saved.stats }
-            : { ...STAT_START },
-        // The story clock travels with the save, so a loaded chat keeps the
-        // time of day the story left it at.
-        clock: typeof saved?.clock === "number" && Number.isFinite(saved.clock) ? saved.clock : undefined,
-        clockUnits: restoredClockUnits(saved?.clockUnits),
-      };
-      saveThread(contactThread(contact));
-    }
-
-    for (const placeId of PLACE_IDS) {
-      const place = PLACES[placeId];
-      for (const chat of place.chats) {
-        const saved = save.threads[chat.storeKey];
-        const state =
-          saved?.state && typeof saved.state === "object" && !Array.isArray(saved.state)
-            ? saved.state
-            : {};
-        chat.data = {
-          transcript: Array.isArray(saved?.transcript) ? saved.transcript : [],
-          queue: Array.isArray(saved?.queue) ? saved.queue : [],
-          state,
-          stats:
-            saved?.stats && typeof saved.stats === "object"
-              ? { ...STAT_START, ...saved.stats }
-              : { ...STAT_START },
-          unlocked:
-            typeof saved?.unlocked === "boolean" ? saved.unlocked : chat.startUnlocked,
-          done: saved?.done === true,
-          clock: typeof saved?.clock === "number" && Number.isFinite(saved.clock) ? saved.clock : undefined,
-          clockUnits: restoredClockUnits(saved?.clockUnits),
-        };
-        saveThread(sceneThread(place, chat));
-      }
-    }
-
-    // The player's name belongs to the snapshot too. Old v1 snapshots did not
-    // store it separately, so recover it from the chat that asked for it.
-    if (typeof save.playerName === "string") {
-      playerName = save.playerName.trim();
-    } else {
-      playerName = "";
-      for (const id of ORDER_IDS) {
-        const savedName = CONTACTS[id].data.state.name;
-        if (typeof savedName === "string" && savedName.trim()) {
-          playerName = savedName.trim();
-          break;
-        }
-      }
-    }
-    try {
-      if (playerName) storage.setItem("sr-name", playerName);
-      else storage.removeItem("sr-name");
-    } catch {
-      /* loaded game still works for this session */
-    }
-  }
-
-  function loadFromSlot(slot: number): boolean {
-    const save = readSave(slot);
-    if (!save) {
-      setSaveStatus(`Slot ${slot} could not be read.`, true);
-      return false;
-    }
-    applySave(save);
-    setSaveStatus(`Loaded slot ${slot}. Your chats are back.`);
-    return true;
   }
 
   function confirmSaveAction(): void {
@@ -2085,9 +2125,9 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
     pendingSave = null;
     saveConfirm.classList.add("hidden");
     if (action.kind === "save") {
-      if (!saveToSlot(action.slot)) savePanelTitle.focus();
+      if (!saveToSlotUtil(saveCtx, action.slot)) savePanelTitle.focus();
     } else {
-      loadFromSlot(action.slot);
+      loadFromSlotUtil(saveCtx, action.slot);
       savePanelTitle.focus();
     }
   }
@@ -2117,6 +2157,32 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
     saveOpen.setAttribute("aria-expanded", "false");
     loadOpen.setAttribute("aria-expanded", "false");
   }
+
+  const saveCtx: SaveSlotsContext = {
+    storage,
+    slots: SAVE_SLOTS,
+    contacts: CONTACTS,
+    order: ORDER_IDS,
+    places: PLACES,
+    placeOrder: PLACE_IDS,
+    statStart: STAT_START,
+    restoredClockUnits,
+    cancelRun,
+    cancelPendingInteraction,
+    getPlayerName: () => playerName,
+    setPlayerName: (v) => { playerName = v; },
+    getPlayerCharacter: () => playerCharacter,
+    setPlayerCharacter: (v) => { playerCharacter = v; },
+    persistPlayerCharacter: (pc) => { if (pc) persistPlayerCharacter(storage, pc); },
+    saveContactThread: (contact) => saveThread(contactThread(contact)),
+    savePlaceThread: (place, chat) => saveThread(sceneThread(place, chat)),
+    setSaveStatus,
+    renderSaveSlots,
+    savePanelTitle,
+    captureThreads: () => captureThreadsUtil(CONTACTS, ORDER_IDS, PLACES, PLACE_IDS) as Record<string, SaveThread>,
+    clearCurrent: () => { current = null; },
+    clearRefreshChoices: () => { refreshChoices = null; },
+  };
 
   saveOpen.addEventListener("click", () => openSavePanel("save"));
   loadOpen.addEventListener("click", () => openSavePanel("load"));
@@ -2222,7 +2288,7 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
   // choice lives on the device, not in a save, so it survives a reload and a
   // fresh start.
   const speedInputs = Array.from(document.querySelectorAll<HTMLInputElement>('input[name="speed"]'));
-  const speedNote = document.getElementById("speed-note");
+  const speedNote = maybeElement<HTMLElement>("speed-note");
 
   const paintSpeed = (): void => {
     for (const input of speedInputs) input.checked = input.value === speed;
@@ -2244,18 +2310,18 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
   const volumeRows: { key: VolumeKey; input: HTMLInputElement | null; out: HTMLElement | null }[] = [
     {
       key: "master",
-      input: document.getElementById("vol-master") as HTMLInputElement | null,
-      out: document.getElementById("vol-master-value"),
+      input: maybeElement<HTMLInputElement>("vol-master"),
+      out: maybeElement<HTMLElement>("vol-master-value"),
     },
     {
       key: "ambient",
-      input: document.getElementById("vol-ambient") as HTMLInputElement | null,
-      out: document.getElementById("vol-ambient-value"),
+      input: maybeElement<HTMLInputElement>("vol-ambient"),
+      out: maybeElement<HTMLElement>("vol-ambient-value"),
     },
     {
       key: "effects",
-      input: document.getElementById("vol-effects") as HTMLInputElement | null,
-      out: document.getElementById("vol-effects-value"),
+      input: maybeElement<HTMLInputElement>("vol-effects"),
+      out: maybeElement<HTMLElement>("vol-effects-value"),
     },
   ];
 
@@ -2290,8 +2356,8 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
   // gated with `"nsfw": "yes"`; because transcripts keep both picture names,
   // switching redraws photos that were already sent instead of baking the
   // choice into a save.
-  const nsfwRow = document.getElementById("nsfw-row");
-  const nsfwBox = document.getElementById("nsfw-mode") as HTMLInputElement | null;
+  const nsfwRow = maybeElement<HTMLElement>("nsfw-row");
+  const nsfwBox = maybeElement<HTMLInputElement>("nsfw-mode");
 
   const paintNsfw = (): void => {
     if (nsfwBox) nsfwBox.checked = nsfwMode;
@@ -2316,7 +2382,7 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
 
   // "Show stat changes": a plain switch in Settings, off unless turned on. The
   // stat lines appear under the reply buttons, so repaint any choice on screen.
-  const statsBox = document.getElementById("show-stats") as HTMLInputElement | null;
+  const statsBox = maybeElement<HTMLInputElement>("show-stats");
 
   const setStats = (on: boolean): void => {
     showStats = on;
@@ -2333,7 +2399,7 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
   // "Dev mode": the master switch. Everything dev-only follows it, and the
   // stat preview comes on and off with it. The chat list, Places and Characters
   // repaint when their tab is next opened, so nothing stale is left behind.
-  const devBox = document.getElementById("dev-mode") as HTMLInputElement | null;
+  const devBox = maybeElement<HTMLInputElement>("dev-mode");
   const setDevMode = (on: boolean): void => {
     devMode = on;
     if (devBox) devBox.checked = on;
@@ -2371,8 +2437,8 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
     try {
       // Saves live in localStorage only — no cookies. Clearing wipes every
       // transcript, place scene, photo memory, milestone, name and save slot
-      // on this device. The text speed, the volume levels, the content setting
-      // and the dev switches are personal preferences, so they stay.
+      // on this device. Text speed, volume, Home wallpaper, content and dev
+      // switches are personal preferences, so they stay.
       storage.clear();
       storage.setItem("sr-text-speed", speed);
       for (const key of Object.keys(VOLUME_KEYS) as VolumeKey[]) {
@@ -2381,11 +2447,14 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
       storage.setItem("sr-show-stats", showStats ? "1" : "0");
       storage.setItem("sr-dev", devMode ? "1" : "0");
       storage.setItem("sr-nsfw", nsfwMode ? "1" : "0");
+      storage.setItem(HOME_BACKGROUND_KEY, homeBackgroundName);
     } catch {
       /* ignore */
     }
     playerName = "";
-    for (const id of ORDER_IDS) {
+    playerCharacter = null;
+    try { storage.removeItem("sr-player"); } catch { /* ignore */ }
+      for (const id of ORDER_IDS) {
       const c = CONTACTS[id];
       c.data = {
         transcript: [], queue: [], state: {},
@@ -2406,42 +2475,149 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
         };
       }
     }
-    showSection("list");
+    showSection("home");
   });
 
   tabChats.addEventListener("click", () => showSection("list"));
   tabPlaces.addEventListener("click", () => showSection("places"));
   tabGallery.addEventListener("click", () => showSection("gallery"));
   tabSettings.addEventListener("click", () => showSection("settings"));
+  tabChars.addEventListener("click", () => showSection("chars"));
+  applyQuickbar();
 
-  function renderCharacters(): void {
-    charGrid.innerHTML = "";
-    let shown = 0;
-    for (const id of ORDER_IDS) {
-      if (CONTACTS[id].dev && !devMode) continue;
-      if (!CONTACTS[id].data.unlocked) continue;
-      const c = CONTACTS[id];
-      const prof = PROFILES[id];
-      if (!prof) continue;
-      shown++;
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = "rounded-2xl bg-chat-800 p-4 text-left";
-      b.setAttribute("aria-label", `Open profile of ${c.data.name}`);
-      b.innerHTML =
-        avatarSpan(c, "h-14 w-14", 56) +
-        `<span class="mt-2 block font-bold">${esc(c.data.name)}</span>` +
-        `<span class="block text-xs text-ink-300">${isRevealed(c, "age") ? esc(tr("profile.yearsOld", { age: prof.age })) : esc(tr("profile.ageHidden"))}</span>` +
-        `<span class="mt-1 block text-xs text-ink-300">${esc(prof.tagline.split(".")[0])}.</span>`;
-      b.addEventListener("click", () => openProfile(c, "chars"));
-      charGrid.appendChild(b);
-    }
-    if (shown === 0) {
-      charGrid.innerHTML = `<p class="col-span-2 rounded-2xl bg-chat-800 p-6 text-center text-sm text-ink-300">No characters yet — add a file to src/story/characters/ 👥</p>`;
+  // Collapsible state
+  let quickbarOpen = true;
+  try { quickbarOpen = storage.getItem("sr-quickbar-open") !== "0"; } catch { /* ignore */ }
+  function setQuickbarOpen(open: boolean): void {
+    quickbarOpen = open;
+    quickbarPanel.classList.toggle("hidden", !open);
+    quickbarTriangle.textContent = open ? "▲" : "▼";
+    try { storage.setItem("sr-quickbar-open", open ? "1" : "0"); } catch { /* ignore */ }
+  }
+  setQuickbarOpen(quickbarOpen);
+
+  quickbarToggle.addEventListener("click", () => setQuickbarOpen(!quickbarOpen));
+
+  function renderQuickbarOptions(): void {
+    quickbarOptions.innerHTML = "";
+    for (const opt of QUICKBAR_OPTIONS) {
+      const row = document.createElement("div");
+      row.className = "flex items-center justify-between gap-2 text-sm";
+      const span = document.createElement("span");
+      span.textContent = opt.label;
+      row.appendChild(span);
+
+      // slider toggle
+      const toggle = document.createElement("span");
+      toggle.className = "relative inline-block h-6 w-11 cursor-pointer rounded-full bg-chat-700 transition";
+      const knob = document.createElement("span");
+      knob.className = "absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white transition";
+      toggle.appendChild(knob);
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.className = "sr-only";
+      cb.checked = quickbarSections.includes(opt.key);
+      const sync = (): void => {
+        toggle.classList.toggle("bg-tick-400", cb.checked);
+        toggle.classList.toggle("bg-chat-700", !cb.checked);
+        knob.style.transform = cb.checked ? "translateX(20px)" : "translateX(0)";
+      };
+      sync();
+      cb.addEventListener("change", () => {
+        if (cb.checked) {
+          if (!quickbarSections.includes(opt.key)) quickbarSections.push(opt.key);
+        } else {
+          quickbarSections = quickbarSections.filter((k) => k !== opt.key);
+        }
+        try { Quickbar.saveQuickbar(storage, quickbarSections); } catch { /* ignore */ }
+        applyQuickbar();
+        sync();
+      });
+      toggle.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); cb.checked = !cb.checked; cb.dispatchEvent(new Event("change")); });
+      row.appendChild(cb);
+      row.appendChild(toggle);
+      quickbarOptions.appendChild(row);
     }
   }
+  renderQuickbarOptions();
 
-  function openProfile(c: Contact, from: "chat" | "chars"): void {
+  combatDeps = {
+    ENEMIES,
+    getPlayer: () => playerCharacter,
+    setPlayer: (pc) => { playerCharacter = pc; },
+    createPlayer: (name, type) => createPlayerCharacter(name, type),
+    getPlayerName: () => playerName,
+    viewChat,
+    viewCombat,
+    combatEnemyName,
+    combatEnemyDesc,
+    combatEnemyHealth,
+    combatPlayerHealth,
+    combatLog,
+    combatAttack,
+    combatPotion,
+    hideView,
+    hideTabs,
+    runGate,
+    loadAutosave,
+    restartGame,
+    savePlayer: (pc) => savePlayerCharacter(pc),
+    esc,
+  };
+  resetHomeBackground.addEventListener("click", () => {
+    if (setHomeBackground(DEFAULT_HOME_BACKGROUND)) {
+      settingsBackgroundStatus.textContent = tr("settings.backgroundResetDone");
+    }
+  });
+  for (const button of document.querySelectorAll<HTMLButtonElement>("[data-home-section]")) {
+    const section = button.dataset.homeSection;
+    if (isSectionName(section) && section !== "home") {
+      button.addEventListener("click", () => showSection(section));
+    }
+  }
+  for (const button of document.querySelectorAll<HTMLButtonElement>("[data-home-back]")) {
+    button.addEventListener("click", () => showSection("home"));
+  }
+
+  function renderCharacters(): void {
+    renderCharactersView({
+      grid: charGrid,
+      playerCharacter,
+      contacts: CONTACTS,
+      order: ORDER_IDS,
+      profiles: PROFILES,
+      devMode,
+      openProfile: (c) => openProfile(c, "chars"),
+      openPlayerProfile,
+      esc,
+    });
+  }
+
+  function openPlayerProfile(): void {
+    const pc = playerCharacter;
+    if (!pc) return;
+    playerNameEl.textContent = pc.name;
+    playerTypeEl.textContent = `${pc.type} · Rank: ${pc.rank}`;
+    playerCombatEl.innerHTML = COMBAT_STAT_NAMES.map((k) => `<li>${esc(k)}: ${pc.combat[k]}</li>`).join("");
+    const slots: (keyof PlayerCharacter["inventory"])[] = ["leftHand","rightHand","upperArmor","lowerArmor","boots"];
+    playerEquipmentEl.innerHTML = slots.map((slot) => {
+      const item = pc.inventory[slot] as {name:string;attack?:number;defense?:number} | undefined;
+      if (!item) return `<li>${esc(slot)}: (empty)</li>`;
+      return `<li>${esc(slot)}: ${esc(item.name)} (atk ${item.attack ?? 0}, def ${item.defense ?? 0})</li>`;
+    }).join("");
+    playerInventoryEl.innerHTML = `<li>Gold: ${pc.inventory.gold}</li><li>Potions: ${pc.inventory.potions}</li>`;
+    hideView(viewChat);
+    hideView(viewList);
+    hideView(viewGallery);
+    hideView(viewPlaces);
+    hideView(viewChars);
+    hideView(viewSettings);
+    hideView(viewProfile);
+    viewPlayer.classList.remove("hidden");
+    viewPlayer.classList.add("flex");
+  }
+
+  function openProfile(c: Contact, from: "chat" | "places" | "chars"): void {
     profileReturn = from;
     const prof = PROFILES[c.id];
     paintAvatar(profileAvatar, c, 64);
@@ -2459,11 +2635,19 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
     profileBirthday.classList.toggle("italic", Boolean(prof?.birthday) && !birthdayKnown);
     profileBirthday.classList.toggle("hidden", !prof?.birthday);
     profileTag.textContent = prof ? prof.tagline : "";
-    profileStats.innerHTML = STAT_META.map((m) => {
+    let statsHtml = STAT_META.map((m) => {
       const v = c.data.stats[m.key] ?? 0;
-      const pct = Math.max(0, Math.min(100, Math.round((v / STAT_MAX) * 100)));
-      return `<li class="flex items-center gap-3"><img src="${m.icon}" alt="" width="112" height="112" class="h-8 w-8 rounded-lg [image-rendering:pixelated]" /><span class="w-24 text-sm">${esc(tr(STAT_LABEL_KEYS[m.key]))}</span><span class="h-2.5 flex-1 overflow-hidden rounded-full bg-chat-700"><span class="block h-full rounded-full bg-gold-500" style="width:${pct}%"></span></span><span class="w-8 text-right text-sm font-bold text-gold-300">${v}</span></li>`;
+      const greenPct = Math.max(0, Math.min(100, ((v + 50) / 100) * 100));
+      const orangePct = Math.max(0, Math.min(100, ((50 - v) / 100) * 100));
+      return `<li class="flex items-center gap-3"><img src="${m.icon}" alt="" width="112" height="112" class="h-8 w-8 rounded-lg [image-rendering:pixelated]" /><span class="w-24 text-sm">${esc(tr(STAT_LABEL_KEYS[m.key]))}</span><span class="h-2.5 flex-1 overflow-hidden rounded-full bg-chat-700 flex"><span class="block h-full bg-green-500" style="width:${greenPct}%"></span><span class="block h-full bg-orange-500" style="width:${orangePct}%"></span></span><span class="w-8 text-right text-sm font-bold text-gold-300">${v}</span></li>`;
     }).join("");
+    const combat = c.combat ?? c.data.combat;
+    if (combat) {
+      const typeLine = c.type ? `<li class="text-sm">Type: ${esc(c.type)} (main stat: ${esc(c.mainstat ?? "")})</li>` : "";
+      const combatLines = COMBAT_STAT_NAMES.map((k) => `<li class="text-sm">${esc(k)}: ${combat[k]}</li>`).join("");
+      statsHtml += `<li class="mt-2 font-bold">Combat</li>${typeLine}${combatLines}`;
+    }
+    profileStats.innerHTML = statsHtml;
     const chip = (s: string): string => `<li class="rounded-full bg-chat-800 border border-chat-700 px-3 py-1">${esc(s)}</li>`;
     // Only what the story has actually told the player shows; the rest sits
     // behind a muted placeholder so it is clear there is more to find.
@@ -2498,7 +2682,7 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
     hideView(viewPlaces);
     hideView(viewChars);
     hideView(viewSettings);
-    tabsEl.classList.add("hidden");
+    showTabs(from === "chat" ? tabChats : from === "places" ? tabPlaces : null);
     viewProfile.classList.remove("hidden");
     viewProfile.classList.add("flex");
     profileBack.focus();
@@ -2506,32 +2690,34 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
 
   function closeProfile(): void {
     hideView(viewProfile);
-    if (profileReturn === "chat" && current) {
+    if (profileReturn !== "chars" && current) {
+      hideTabs();
       viewChat.classList.remove("hidden");
       viewChat.classList.add("flex");
       scroll();
     } else {
-      showSection("chars");
+      showSection(profileReturn === "places" ? "places" : "chars");
     }
   }
 
   whoBtn.addEventListener("click", () => {
     if (!current) return;
     const c = current.contact ?? (current.scene ? CONTACTS[current.scene.chat.host] : undefined);
-    if (c) openProfile(c, "chat");
+    if (c) openProfile(c, current.scene ? "places" : "chat");
   });
   profileBack.addEventListener("click", closeProfile);
+  playerBack.addEventListener("click", () => { hideView(viewPlayer); showSection("chars"); });
   profileChat.addEventListener("click", closeProfile);
-
-  tabChars.addEventListener("click", () => showSection("chars"));
 
   backBtn.addEventListener("click", () => {
     if (current?.scene) showSection("places");
     else showList();
   });
-  restartBtn.addEventListener("click", () => {
-    if (current) restartDialog.showModal();
-  });
+  if (restartBtn) {
+    restartBtn.addEventListener("click", () => {
+      if (current) restartDialog.showModal();
+    });
+  }
   restartCancel.addEventListener("click", () => restartDialog.close());
   restartConfirm.addEventListener("click", () => {
     restartDialog.close();
@@ -2597,8 +2783,8 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
         else showList();
         return;
       }
-      if (viewList.classList.contains("hidden")) {
-        showSection("list");
+      if (viewHome.classList.contains("hidden")) {
+        showSection("home");
         return;
       }
       void App.exitApp();
@@ -2606,7 +2792,7 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
   }
 
   // Boot: show story problems, restore every saved chat and place, then show
-  // the list. Places have no row until the player opens the tab.
+  // the phone Home screen. Places have no row until the player opens the tab.
   renderIssues(issues);
   for (const id of ORDER_IDS) loadChat(CONTACTS[id]);
   // Saves from before the name was shared kept it only in the chat that asked.
@@ -2625,5 +2811,6 @@ export function startApp(cast: Cast, issues: Issue[], story: StoryMeta, sound?: 
     const place = PLACES[placeId];
     for (const chat of place.chats) loadThread(sceneThread(place, chat));
   }
-  showSection("list");
+  initializeHomeBackground();
+  showSection("home");
 }

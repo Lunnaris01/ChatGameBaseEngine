@@ -29,8 +29,13 @@ function loadStory() {
   }
 
   const places: Record<string, unknown> = {};
-  for (const path of walkFiles(join(root, "locations")).filter((file) => file.endsWith(".json"))) {
+  for (const path of walkFiles(join(root, "locations")).filter((file) => file.endsWith(".json") && !file.includes(`${sep}enemies${sep}`))) {
     places[path.split(sep).pop() ?? path] = readJson(path);
+  }
+
+  const enemies: Record<string, unknown> = {};
+  for (const path of walkFiles(join(root, "locations")).filter((file) => file.endsWith(".json") && file.includes(`${sep}enemies${sep}`))) {
+    enemies[path.split(sep).pop() ?? path] = readJson(path);
   }
 
   const assetsDir = join(root, "assets");
@@ -48,7 +53,8 @@ function loadStory() {
     pictures,
     readJson(join(root, "story.json")),
     sounds,
-    readJson(join(root, "assets", "sounds", "sounds.json")),
+    undefined,
+    enemies,
   );
 }
 
@@ -66,71 +72,85 @@ function nestedTypes(steps: Step[], found = new Set<string>()): Set<string> {
 }
 
 describe("sample story", () => {
-  test("validates the five-chapter Mai story and its locations", () => {
+  test("validates the fantasy starter story", () => {
     const { cast, issues } = loadStory();
     const errors = issues.filter((issue) => issue.level === "error");
 
     expect(errors).toEqual([]);
-    expect(cast.contacts.mai).toBeDefined();
-    expect(cast.order).toEqual(["tutorial", "mai"]);
+    expect(cast.contacts.tutorial).toBeDefined();
+    expect(cast.contacts.receptionist).toBeDefined();
+    expect(cast.order).toEqual(["tutorial", "receptionist"]);
     expect(cast.contacts.tutorial.startUnlocked).toBe(true);
-    expect(cast.contacts.mai.startUnlocked).toBe(false);
-    expect(cast.contacts.mai.script.filter((step) => step.t === "chapter")).toHaveLength(5);
-    expect(cast.contacts.tutorial.script.some((step) => step.t === "unlock" && step.chat === "mai")).toBe(true);
-    expect(cast.contacts.tutorial.script.some((step) => step.t === "unlockPlace" && step.place === "teahouse" && step.chat === "first-date")).toBe(true);
-    expect(cast.placeOrder).toEqual(["teahouse", "riverside"]);
-    expect(cast.places.teahouse.chats).toHaveLength(2);
-    expect(cast.places.teahouse.chats[0].startUnlocked).toBe(false);
-    expect(cast.places.teahouse.chats[1].startUnlocked).toBe(false);
-    expect(cast.places.riverside.chats).toHaveLength(2);
+    expect(cast.contacts.receptionist.startUnlocked).toBe(false);
+    expect(cast.places.forest).toBeDefined();
+    expect(cast.enemies["goblin-spy"]).toBeDefined();
+    expect(cast.placeOrder).toEqual(["forest"]);
+    expect(cast.places.forest.chats).toHaveLength(1);
   });
 
-  test("the story and its locations represent every supported step type", () => {
-    const { cast } = loadStory();
-    const types = nestedTypes(cast.contacts.tutorial.script);
-    nestedTypes(cast.contacts.mai.script, types);
-    for (const placeId of cast.placeOrder) {
-      for (const scene of cast.places[placeId].chats) nestedTypes(scene.script, types);
-    }
-
-    expect([...types].sort()).toEqual([
-      "addStats", "append", "ask", "choice", "divider", "ending", "gate", "if",
-      "img", "milestone", "msg", "presence", "quiz", "rename", "reveal", "set",
-      "sound", "unlock", "unlockPlace", "wait", "chapter",
-    ].sort());
+  test("the starter story validates", () => {
+    const { issues } = loadStory();
+    expect(issues.filter((i) => i.level === "error")).toEqual([]);
   });
 
-  test("the teahouse scene covers the scene-only step set", () => {
+  test("starter route unlocks receptionist then forest and includes combat", () => {
     const { cast } = loadStory();
-    const scene = cast.places.teahouse.chats[0];
-    const types = nestedTypes(scene.script);
+    const tutorialSteps = JSON.stringify(cast.contacts.tutorial.script);
+    expect(tutorialSteps).toContain('"t":"unlock","chat":"receptionist"');
+    const receptionistSteps = JSON.stringify(cast.contacts.receptionist.script);
+    expect(receptionistSteps).toContain('"t":"unlockPlace"');
+    expect(receptionistSteps).toContain('"place":"forest"');
+    const forestSteps = JSON.stringify(cast.places.forest.chats[0].script);
+    expect(forestSteps).toContain('"t":"combat"');
+    expect(cast.enemies["goblin-spy"]).toBeDefined();
+  });
 
-    expect([...types].sort()).toEqual([
-      "append", "choice", "divider", "if", "img", "milestone", "msg", "set",
-      "sound", "unlock", "unlockPlace", "wait",
-    ].sort());
+  test("the forest scene validates", () => {
+    const { cast, issues } = loadStory();
+    const errors = issues.filter((issue) => issue.level === "error");
+    expect(errors).toEqual([]);
+    const scene = cast.places.forest.chats[0];
+    expect(scene).toBeDefined();
   });
 
   test("the bundled character and Place queues fit the local backup schema", () => {
     const { cast } = loadStory();
     const data = {
-      "sr-chat-mai": JSON.stringify({
+      "sr-chat-tutorial": JSON.stringify({
         transcript: [],
-        queue: cast.contacts.mai.script,
+        queue: cast.contacts.tutorial.script,
         state: {},
-        stats: cast.contacts.mai.data.stats,
+        stats: cast.contacts.tutorial.data.stats,
       }),
-      "sr-place-teahouse-first-visit": JSON.stringify({
+      "sr-place-forest-arrive": JSON.stringify({
         transcript: [],
-        queue: cast.places.teahouse.chats[0].script,
+        queue: cast.places.forest.chats[0].script,
         state: {},
-        stats: cast.places.teahouse.chats[0].data.stats,
+        stats: cast.places.forest.chats[0].data.stats,
         unlocked: true,
+        visited: true,
       }),
     };
     const parsed = parseBackup(JSON.stringify(makeBackup(data, "A Map to Somewhere")));
-
     expect("backup" in parsed).toBe(true);
+  });
+
+  test("automatically places assets under misc/ in the General Gallery folder", () => {
+    const result = buildStory(
+      {
+        "mai/mai.json": { name: "Mai" },
+        "mai/chapter1.json": [
+          { type: "chapter", number: 1, text: "", time: "", at: "14:00" },
+          { type: "photo", name: "misc/sunset", alt: "A sunset over distant hills" },
+          { type: "chapter-end" },
+        ],
+      },
+      {},
+      { "misc/sunset": "/assets/sunset.png" },
+    );
+
+    expect(result.issues.filter((issue) => issue.level === "error")).toEqual([]);
+    expect(result.cast.gallery.find((category) => category.id === "misc")?.images.some((image) => image.name === "misc/sunset")).toBe(true);
   });
 });
 

@@ -47,6 +47,9 @@ src/story/
 ├── locations/                         # optional in-person scenes
 │   └── teahouse.json
 └── assets/
+    ├── misc/                           # general story images; General Gallery folder
+    ├── system/
+    │   └── default_background.png      # default Home wallpaper
     ├── portraits/alex.svg
     ├── alex/chapter1/window.webp
     └── sounds/
@@ -58,6 +61,12 @@ Folders and file names are IDs. Use letters, numbers, and dashes; do not use
 spaces. A character folder must contain a matching profile (`alex/alex.json`).
 Chapter files are named `chapter1.json`, `chapter2.json`, and so on. Location
 IDs are filenames without `.json`.
+
+Image paths are relative to `assets/` and normally omit the extension. Put
+generic, story-used images under `assets/misc/`; a referenced `misc/...` image
+is filed in the General Gallery folder. Put engine/system artwork under
+`assets/system/`; `system/default_background.png` is the Home wallpaper fallback
+and is not a Gallery item unless the story sends it as a photo.
 
 The starter includes the reusable Tutorial and Mai's five-chapter romance
 ministory. Keep the Tutorial. It unlocks Mai after the first choice. Use Mai as
@@ -93,7 +102,8 @@ and Riverside Garden scenes for Places-only steps.
 
 The supported UI keys are defined in `src/engine/i18n.ts`. Current groups are
 `skip`; `nav.*`; `action.*`; `settings.*`; `speed.*`; `volume.*`; `chat.*`;
-`quiz.*`; `gallery.*`; `profile.*`; `state.new`; `story.end.*`; and `about.*`.
+`quiz.*`; `game.*`; `money.*`; `places.*`; `home.*`; `gallery.*`; `profile.*`;
+`state.new`; `story.end.*`; and `about.*`.
 Values may contain `{name}`, `{count}`, `{who}`, `{age}`, or `{date}` where that
 key uses a value. For example:
 
@@ -114,7 +124,9 @@ The current keys are:
 
 ```text
 skip
-nav.label, nav.chats, nav.places, nav.gallery, nav.characters, nav.settings
+nav.label, nav.home, nav.chats, nav.places, nav.gallery,
+nav.characters, nav.settings
+home.title, home.apps, home.status
 action.howToPlay, action.backToGame, action.leave, action.close, action.save,
 action.load, action.send
 settings.story, settings.titleLabel, settings.saveCount, settings.speed,
@@ -126,7 +138,9 @@ settings.content, settings.contentNote, settings.statsPreview, settings.statsNot
 settings.backup, settings.backupDescription, settings.backupNote, settings.export,
 settings.import, settings.replaceBackup, settings.replaceProgress, settings.cancel,
 settings.closeSave, settings.overwrite, settings.restartTitle,
-settings.restartDescription, settings.keepChatting, settings.restart
+settings.restartDescription, settings.keepChatting, settings.restart,
+settings.homeBackground, settings.homeBackgroundDescription,
+settings.backgroundReset, settings.backgroundResetDone
 speed.slow, speed.normal, speed.quick, speed.speedy, speed.skip,
 speed.slowNote, speed.normalNote, speed.quickNote, speed.speedyNote, speed.skipNote,
 speed.slowShort, speed.defaultShort, speed.asWrittenShort, speed.speedyShort,
@@ -137,11 +151,17 @@ chat.backToChats, chat.backToPlaces, chat.viewProfile, chat.viewNamedProfile,
 chat.restart, chat.leavePlace, chat.replyCount, chat.replyCount.one, chat.typedReply,
 chat.replyRequired
 quiz.prompt, quiz.available
-gallery.hidden, gallery.notYet, gallery.viewer, gallery.previous, gallery.next
+game.board, game.memoryTitle, game.memoryRules, game.start, game.playAgain,
+game.cardDown, game.cardFace, game.moon, game.clover, game.pickCards,
+game.matchFound, game.noMatch, game.win
+places.dateCost, places.sceneCost, places.needMore, places.revisitFree,
+places.insufficient
+gallery.hidden, gallery.notYet, gallery.viewer, gallery.previous, gallery.next,
+gallery.background, gallery.backgroundAction, gallery.backgroundSaved
 profile.title, profile.stats, profile.interests, profile.likes, profile.dislikes,
 profile.openChat, profile.ageHidden, profile.birthdayHidden, profile.notYet,
 profile.yearsOld, profile.birthday
-stat.trust, stat.feelings, stat.attraction, stat.bond
+stat.trust, stat.friendship
 state.new
 story.end.wait, story.end.pause, story.end.finale
 about.title, about.open, about.p1, about.p2, about.p3, about.p4,
@@ -286,10 +306,10 @@ defaults to the label. `then` is the steps that follow the selected reply.
 Effects can be set directly on the option or with a `stats` step:
 
 ```json
-{ "type": "stats", "trust": 1, "bond": -1 }
+{ "type": "stats", "trust": 1, "friendship": -1 }
 ```
 
-Supported stats are `trust`, `feelings`, `attraction`, and `bond`. Each character
+Supported stats are `trust` and `friendship`. Each character
 starts at 2. Profile bars are drawn against 20; stat values themselves are
 numeric and are not clamped.
 
@@ -355,7 +375,7 @@ when `any` is present, at least one group must match:
 {
   "type": "branch",
   "needs": { "trust": 5 },
-  "any": [{ "feelings": 7 }, { "attraction": 7 }],
+  "any": [{ "trust": 7 }, { "friendship": 7 }],
   "then": [{ "type": "them", "text": "That works." }],
   "otherwise": [{ "type": "them", "text": "Not yet." }]
 }
@@ -417,7 +437,7 @@ threads and can be inserted into character messages and photo captions as
 ```json
 { "type": "ask", "key": "name", "placeholder": "What should I call you?" }
 { "type": "them", "text": "Good to meet you, {name}." }
-{ "type": "ask", "key": "favorite-tea", "placeholder": "Which tea do you like?", "feelings": 1 }
+{ "type": "ask", "key": "favorite-name", "placeholder": "What is your name?", "trust": 1 }
 ```
 
 An `ask` can apply stat effects when submitted. It is not available in a Place
@@ -462,8 +482,10 @@ also have stat effects.
 Supported image formats: SVG, PNG, JPG/JPEG, WebP, GIF, and AVIF. Use paths
 relative to `assets/`, without extensions. `alt` is required. Photos go into
 the sender's Gallery folder by default; `gallery` can be `misc` or another
-character ID. A filename beginning with `misc_` also goes into General. Avatar
-portraits appear in Gallery from the start.
+character ID. Images under `assets/misc/` and filenames beginning with `misc_`
+go into General. Avatar portraits appear in Gallery from the start. Once a
+revealed image is opened, the player can set it as the Home wallpaper; Settings
+can restore `assets/system/default_background.png`.
 
 The SFW version is shown by default. `nsfw_version` selects a second local image
 when the player enables the optional content setting. Any step can instead be
@@ -537,9 +559,10 @@ be a character ID:
   "host": "alex",
   "icon": "🍵",
   "color": "#7d624a",
-  "teaser": "A short description above its scenes.",
-  "order": 1,
-  "ambient": "ambience/evening",
+      "teaser": "A short description above its scenes.",
+      "order": 1,
+      "cost": 40,
+      "ambient": "ambience/evening",
   "dev": false,
   "chats": [
     {
@@ -564,8 +587,12 @@ be a character ID:
 }
 ```
 
-Optional place fields: `icon`, `color`, `teaser`, `order`, `ambient`, and
-`dev`. Each chat needs a unique `id` within its place and a `title`. `unlocked`
+Optional place fields: `icon`, `color`, `teaser`, `order`, `ambient`, `dev`,
+and `cost`. `cost` is a non-negative whole-dollar amount charged the first time
+each new scene/date at the place is opened; revisiting that scene is free. If
+the player cannot afford it, that scene stays unavailable until they earn more
+money in Games. The example's `$40` fee is illustrative; omit `cost` for a free
+place. Each chat needs a unique `id` within its place and a `title`. `unlocked`
 defaults to `true`; use `unlock-place` to reveal a locked scene:
 
 ```json
@@ -614,19 +641,30 @@ The engine provides these screens without additional story steps:
 
 - **Chats** lists unlocked characters, their teaser/last message, and a new
   marker until the thread has activity. Each thread resumes its saved queue.
+- **Home** is the phone launcher, with shortcuts for Chats, Places, Gallery,
+  Games, Characters and Settings. Its bottom quickbar keeps Chats, Places,
+  Gallery and Settings one tap away; app headers return to Home.
 - **Characters** shows unlocked profiles, revealed facts, and each contact's
   four stats. A profile fact stays a placeholder until its `reveal` runs.
 - **Gallery** collects profile avatars and every photo reachable in story files,
   including unrevealed branch photos. Unseen photos appear as placeholders;
-  revealed images open in a swipeable, keyboard-operable lightbox.
+  revealed images open in a swipeable, keyboard-operable lightbox. Its
+  **Background** action sets a seen photo as the Home wallpaper; the action is
+  unavailable for unrevealed placeholders.
 - **Places** lists unlocked in-person scenes. A completed scene stays visible as
-  read; `unlock-place` can reveal a follow-up.
+  read; `unlock-place` can reveal a follow-up. A location's optional `cost`
+  charges once for each new scene there; revisits are free.
+- **Games** currently offers a replayable four-card memory match: two pairs,
+  randomized each round. The player starts with `$100` and earns `$20` for each
+  completed round. The wallet appears in Places and Games.
 - **How to play** explains the player-facing chat controls. Its copy is part of
   the UI translation dictionary.
 
 Settings supplies text speed, sound levels, six manual save slots, portable
 backup/restore, a local-data explanation, a two-step delete action, and
-developer controls. The five text speeds scale both calculated delays and
+developer controls. The Home screen section can restore the default wallpaper.
+Wallpaper choice is stored locally and included in portable backups. The five
+text speeds scale both calculated delays and
 explicit story delays: Slow is 25% slower than Normal; Normal is twice the
 unscaled delay; Quick reader uses the unscaled delay; Speedy is about 1.5× faster
 than the unscaled pace; Skip through is the fast replay pace. Master, ambient,
@@ -636,10 +674,13 @@ preview; the optional content switch is behind Dev mode and resets to SFW when
 Dev mode is disabled.
 
 - Chat transcripts, active queues, stats, memories, profile reveals, place
-  scenes, photo unlocks, player name, and six manual save slots stay in browser
+  scenes, photo unlocks, player name, wallet, and six manual save slots stay in browser
   storage on the device.
-- Text speed, sound levels, Dev mode, stat previews, and content mode are
-  preferences, separate from save slots.
+- The wallet starts at `$100`; each completed memory match adds `$20`. Money is
+  progress, not a preference: it is included in manual save slots and portable
+  backups. Deleting progress resets the wallet to `$100`.
+- Text speed, sound levels, Home wallpaper, Dev mode, stat previews, and content
+  mode are preferences, separate from save slots.
 - Restarting a chat confirms before clearing that chat's transcript, state, and
   stats. **Delete all chats** clears all game progress after a second tap.
 - Settings can export and import a versioned JSON backup. Import validates the
@@ -725,3 +766,53 @@ only. `photo` can instead use `nsfw_version` for an alternate image.
 
 For the engine's reusable UI and design guidance, see `docs/design.md`. For the
 sample's premise and cast, see `docs/story.md`.
+
+## Fantasy systems
+
+### Character combat stats
+
+Character JSON may include:
+
+```json
+{
+  "type": "Fighter",
+  "mainstat": "strength",
+  "health": 50,
+  "defense": 5,
+  "strength": 8,
+  "agility": 3,
+  "intelligence": 4,
+  "cunning": 2
+}
+```
+
+Types: `Fighter`, `Assassin`, `Archer`, `Mage`. `mainstat` maps to `strength`, `agility`, or `intelligence`.
+
+### Enemies
+
+Put enemy files in `src/story/locations/<place>/enemies/<id>.json`:
+
+```json
+{
+  "name": "Goblin Spy",
+  "health": 20,
+  "attack": 5,
+  "mainstat": 2,
+  "defense": 0,
+  "description": "A sneaky goblin scout."
+}
+```
+
+Use `{ "type": "combat", "enemy": "goblin-spy" }` in a chat or place scene.
+
+### Player character
+
+The Tutorial sets the player's class with `{ "type": "remember", "key": "class", "value": "Fighter" }`. Rank can be set with `{ "type": "remember", "key": "rank", "value": "F" }`. Potions use `{ "type": "remember", "key": "potions", "value": "3" }` or `addPotions`.
+
+### Thought and narrator bubbles
+
+Use `{ "type": "thought", "text": "..." }` or `{ "type": "narrate", "text": "..." }`.
+
+### Autosave
+
+Use `{ "type": "autosave" }` to snapshot progress. An autosave is also created before the goblin encounter in the starter.

@@ -5,20 +5,21 @@ import { buildStory, type Issue } from "./story";
 import type { Cast, Step } from "./types";
 import bundledTheme from "../story/theme.css?raw";
 import { registerOfflineSupport } from "./pwa";
+import { requireElement, maybeElement } from "./dom";
 
 registerOfflineSupport();
 
-const folderInput = document.getElementById("folder-input") as HTMLInputElement;
-const bundledLoad = document.getElementById("bundled-load") as HTMLButtonElement;
-const fileSelect = document.getElementById("file-select") as HTMLSelectElement;
-const editor = document.getElementById("json-editor") as HTMLTextAreaElement;
-const downloadButton = document.getElementById("download-file") as HTMLButtonElement;
-const studioStatus = document.getElementById("studio-status") as HTMLElement;
-const validationSummary = document.getElementById("validation-summary") as HTMLElement;
-const validationIssues = document.getElementById("validation-issues") as HTMLUListElement;
-const flowMap = document.getElementById("flow-map") as HTMLElement;
-const previewButton = document.getElementById("preview-story") as HTMLAnchorElement;
-const previewStatus = document.getElementById("preview-status") as HTMLElement;
+const folderInput = requireElement<HTMLInputElement>("folder-input");
+const bundledLoad = requireElement<HTMLButtonElement>("bundled-load");
+const fileSelect = requireElement<HTMLSelectElement>("file-select");
+const editor = requireElement<HTMLTextAreaElement>("json-editor");
+const downloadButton = requireElement<HTMLButtonElement>("download-file");
+const studioStatus = requireElement<HTMLElement>("studio-status");
+const validationSummary = requireElement<HTMLElement>("validation-summary");
+const validationIssues = requireElement<HTMLUListElement>("validation-issues");
+const flowMap = requireElement<HTMLElement>("flow-map");
+const previewButton = requireElement<HTMLAnchorElement>("preview-story");
+const previewStatus = requireElement<HTMLElement>("preview-status");
 
 type Project = StoryFiles & { documents: Map<string, string>; urls: string[]; themeCss: string };
 let project: Project = { characters: {}, places: {}, assets: {}, sounds: {}, documents: new Map(), urls: [], themeCss: "" };
@@ -44,6 +45,9 @@ function loadBundled(): void {
   }
   for (const [path, value] of Object.entries(bundled.places)) {
     registerDocument(`locations/${path}`, JSON.stringify(value, null, 2));
+  }
+  for (const [path, value] of Object.entries(bundled.enemies ?? {})) {
+    registerDocument(`locations/forest/enemies/${path}.json`, JSON.stringify(value, null, 2));
   }
   if (bundled.meta !== undefined) registerDocument("story.json", JSON.stringify(bundled.meta, null, 2));
   if (bundled.soundsConfig !== undefined) {
@@ -122,6 +126,7 @@ async function loadFolder(files: FileList | null): Promise<void> {
 function createFiles(): { files: StoryFiles; issues: Issue[] } {
   const characters: Record<string, unknown> = {};
   const places: Record<string, unknown> = {};
+  const enemies: Record<string, unknown> = {};
   const issues: Issue[] = [];
   let meta: unknown;
   let soundsConfig: unknown;
@@ -143,12 +148,14 @@ function createFiles(): { files: StoryFiles; issues: Issue[] } {
     if (path === "story.json") meta = value;
     else if (path === "assets/sounds/sounds.json") soundsConfig = value;
     else if (path.startsWith("characters/")) characters[path.slice("characters/".length)] = value;
+    else if (path.startsWith("locations/") && path.includes("/enemies/")) enemies[path.split("/").pop() ?? path] = value;
     else if (path.startsWith("locations/")) places[path.slice("locations/".length)] = value;
   }
 
   const files: StoryFiles = {
     characters,
     places,
+    enemies,
     assets: project.assets,
     sounds: project.sounds,
     meta,
@@ -166,6 +173,7 @@ function validate(): { files: StoryFiles; errors: Issue[] } {
     files.meta,
     Object.keys(files.sounds),
     files.soundsConfig,
+    files.enemies,
   );
   renderFlow(result.cast);
   const issues = [...jsonIssues, ...result.issues];

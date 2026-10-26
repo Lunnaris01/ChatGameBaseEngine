@@ -13,8 +13,9 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const STEP_TYPES = new Set([
   "chapter", "divider", "msg", "choice", "milestone", "ask", "presence", "rename", "unlock",
   "unlockPlace", "set", "reveal", "if", "addStats", "gate", "append", "ending", "img", "wait", "sound", "quiz",
+  "thought", "narrate", "autosave", "combat",
 ]);
-const STAT_KEYS = new Set(["trust", "feelings", "attraction", "bond"]);
+const STAT_KEYS = new Set(["trust", "friendship"]);
 
 function validStats(value: unknown): boolean {
   return isRecord(value) && Object.entries(value).every(([key, amount]) =>
@@ -95,6 +96,14 @@ function validStep(value: unknown, depth: number): boolean {
           (answer.effects === undefined || validStats(answer.effects)),
         ),
       ) && validSteps(value.pass, depth + 1);
+    case "thought":
+    case "narrate":
+      return typeof value.text === "string" && (value.typing === undefined || typeof value.typing === "number") &&
+        (value.pause === undefined || typeof value.pause === "number") && (value.at === undefined || typeof value.at === "number");
+    case "autosave":
+      return true;
+    case "combat":
+      return typeof value.enemy === "string";
     default:
       return false;
   }
@@ -109,7 +118,7 @@ function validThread(value: unknown): boolean {
   const validItems = transcript === undefined || (
     Array.isArray(transcript) && transcript.every((item) =>
       isRecord(item) &&
-      (item.from === "them" || item.from === "me" || item.from === "sys") &&
+      (item.from === "them" || item.from === "me" || item.from === "sys" || item.from === "thought" || item.from === "narrator") &&
       typeof item.text === "string" &&
       (item.time === undefined || typeof item.time === "string") &&
       (item.speaker === undefined || typeof item.speaker === "string") &&
@@ -129,13 +138,22 @@ function validThread(value: unknown): boolean {
   );
   const validState = state === undefined || (isRecord(state) && Object.values(state).every((item) => typeof item === "string"));
   const validStats = stats === undefined || (isRecord(stats) && Object.values(stats).every((item) => typeof item === "number" && Number.isFinite(item)));
+  const validVisited = value.visited === undefined || typeof value.visited === "boolean";
   return (
-    validItems && validQueue && validState && validStats &&
+    validItems && validQueue && validState && validStats && validVisited &&
     (value.clock === undefined || (typeof value.clock === "number" && Number.isFinite(value.clock)))
   );
 }
 
 function validStoredValue(key: string, value: string): boolean {
+  if (key === "sr-player") {
+    try {
+      const valueObj = JSON.parse(value);
+      return isRecord(valueObj) && typeof valueObj.name === "string" && typeof valueObj.type === "string";
+    } catch {
+      return false;
+    }
+  }
   if (key.startsWith("sr-chat-") || key.startsWith("sr-place-")) {
     try {
       return validThread(JSON.parse(value));

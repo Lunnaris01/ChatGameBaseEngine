@@ -23,9 +23,13 @@ import type {
   Stats,
   Step,
 } from "./types";
-import { REVEAL_FACTS, STAT_NAMES, STAT_START, isStat, matchesIfCondition } from "./types";
+import { REVEAL_FACTS, STAT_NAMES, STAT_START, isStat, matchesIfCondition, CHARACTER_TYPES, COMBAT_STAT_NAMES, DEFAULT_COMBAT_STATS, mainStatForType } from "./types";
+import type { CharacterType, CombatStatName, Enemy, CombatStats } from "./types";
 import { VOICES } from "./sounds";
 import { UI_MESSAGES, type UiKey, type UiOverrides } from "./i18n";
+import { eachNestedStep } from "./step-utils";
+import { validateStoryReferences } from "./story-validate";
+import { nearest } from "./string-utils";
 
 export type Issue = {
   file: string;
@@ -36,7 +40,7 @@ export type Issue = {
 };
 
 type Raw = Record<string, unknown>;
-type Ctx = {
+export type Ctx = {
   file: string;
   issues: Issue[];
   ids: Set<string>;
@@ -60,37 +64,10 @@ const isObj = (v: unknown): v is Raw => typeof v === "object" && v !== null && !
 const isText = (v: unknown): v is string => typeof v === "string" && v.trim() !== "";
 const isNum = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
 
-function report(ctx: Ctx, where: string, level: Issue["level"], message: string): void {
+export function report(ctx: Ctx, where: string, level: Issue["level"], message: string): void {
   ctx.issues.push({ file: ctx.file, where, level, message });
 }
 
-/** "did you mean"-style hint for typos in field names. */
-function nearest(key: string, known: Iterable<string>): string {
-  let best = "";
-  let bestScore = 4;
-  for (const candidate of known) {
-    const d = editDistance(key.toLowerCase(), candidate.toLowerCase());
-    if (d < bestScore) {
-      bestScore = d;
-      best = candidate;
-    }
-  }
-  return best ? ` — did you mean "${best}"?` : "";
-}
-
-function editDistance(a: string, b: string): number {
-  const row = [...b].map((_, i) => i + 1);
-  for (let i = 1; i <= a.length; i++) {
-    let prev = i - 1;
-    row[0] = i;
-    for (let j = 1; j <= b.length; j++) {
-      const tmp = row[j];
-      row[j] = Math.min(row[j] + 1, row[j - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1));
-      prev = tmp;
-    }
-  }
-  return row[b.length];
-}
 
 /** Checks the fields of one JSON object against the names the format knows. */
 function fields(ctx: Ctx, where: string, raw: Raw, required: string[], optional: string[]): boolean {
@@ -333,6 +310,10 @@ const STEP_FIELDS: Record<string, { required: string[]; optional: string[] }> = 
   "add-to-chat": { required: ["chat", "steps"], optional: [] },
   ask: { required: ["key", "placeholder"], optional: [...STAT_NAMES] },
   quiz: { required: ["id", "questions"], optional: ["pass"] },
+  thought: { required: ["text"], optional: ["typing", "pause", "at", "duration"] },
+  narrate: { required: ["text"], optional: ["typing", "pause", "at", "duration"] },
+  autosave: { required: [], optional: [] },
+  combat: { required: ["enemy"], optional: [] },
   "chapter-end": { required: [], optional: [] },
   "story-end": { required: [], optional: [] },
   "continue-elsewhere": { required: [], optional: ["for"] },
@@ -357,6 +338,10 @@ const SCENE_STEPS = new Set([
   "unlock",
   "unlock-place",
   "add-to-chat",
+  "thought",
+  "narrate",
+  "autosave",
+  "combat",
 ]);
 
 function takeSteps(ctx: Ctx, where: string, raw: unknown): Step[] {
@@ -455,6 +440,39 @@ function takeStepBody(ctx: Ctx, where: string, raw: unknown): Step | null {
         duration,
         at: takeAt(ctx, label, raw),
       };
+    }
+    case "thought": {
+      if (!isText(raw.text)) return null;
+      const duration = takeDuration(ctx, label, raw);
+      if (raw.duration !== undefined && duration === undefined) return null;
+      return {
+        t: "thought",
+        text: raw.text,
+        typing: optDelay("typing"),
+        pause: optDelay("pause"),
+        duration,
+        at: takeAt(ctx, label, raw),
+      };
+    }
+    case "narrate": {
+      if (!isText(raw.text)) return null;
+      const duration = takeDuration(ctx, label, raw);
+      if (raw.duration !== undefined && duration === undefined) return null;
+      return {
+        t: "narrate",
+        text: raw.text,
+        typing: optDelay("typing"),
+        pause: optDelay("pause"),
+        duration,
+        at: takeAt(ctx, label, raw),
+      };
+    }
+    case "autosave": {
+      return { t: "autosave" };
+    }
+    case "combat": {
+      if (!isText(raw.enemy)) return null;
+      return { t: "combat", enemy: raw.enemy };
     }
     case "chapter": {
       if (!isNum(raw.number) || !Number.isInteger(raw.number) || raw.number < 1) {
@@ -792,14 +810,15 @@ function takeStepBody(ctx: Ctx, where: string, raw: unknown): Step | null {
 
 const CHARACTER_FIELDS = {
   required: ["name"],
-  optional: ["chat", "color", "initial", "avatar", "teaser", "unlocked", "dev", "order", "age", "birthday", "tagline", "interests", "likes", "dislikes"],
+  optional: ["chat", "color", "initial", "avatar", "teaser", "unlocked", "dev", "order", "age", "birthday", "tagline", "interests", "likes", "dislikes",
+    "type", "mainstat", "mainStat", "health", "defense", "strength", "agility", "intelligence", "cunning", "trust", "friendship", "stats"],
 };
 
 const textList = (v: unknown): string[] | null =>
   Array.isArray(v) && v.every((x) => isText(x)) ? (v as string[]) : null;
 
 type ChapterSource = { file: string; number: number; data: unknown };
-type Built = {
+export type Built = {
   contact: Contact;
   profile?: Profile;
   order: number;
@@ -855,6 +874,43 @@ function takeCharacter(ctx: Ctx, id: string, raw: Raw, chapters: ChapterSource[]
     );
     ok = false;
   }
+  // Character type and combat stats.
+  let charType: CharacterType | undefined;
+  if (raw.type !== undefined) {
+    if (typeof raw.type !== "string" || !CHARACTER_TYPES.includes(raw.type as CharacterType)) {
+      report(ctx, where, "error", `"type" must be one of ${CHARACTER_TYPES.join(", ")}`);
+      ok = false;
+    } else {
+      charType = raw.type as CharacterType;
+    }
+  }
+  let mainstatRaw = raw.mainstat ?? raw.mainStat;
+  let mainstat: CombatStatName | undefined;
+  if (mainstatRaw !== undefined) {
+    if (typeof mainstatRaw !== "string" || !COMBAT_STAT_NAMES.includes(mainstatRaw as CombatStatName)) {
+      report(ctx, where, "error", `"mainstat" must be one of ${COMBAT_STAT_NAMES.join(", ")}`);
+      ok = false;
+    } else {
+      mainstat = mainstatRaw as CombatStatName;
+    }
+  }
+  if (charType && !mainstat) mainstat = mainStatForType(charType);
+
+  const combat: CombatStats = { ...DEFAULT_COMBAT_STATS };
+  for (const statName of COMBAT_STAT_NAMES) {
+    const v = raw[statName];
+    if (v !== undefined) {
+      if (!isNum(v) || v < 0 || v > 100) {
+        report(ctx, where, "error", `"${statName}" must be a number between 0 and 100`);
+        ok = false;
+      } else {
+        combat[statName] = v;
+      }
+    }
+  }
+  // Health defaults to 50 if not provided.
+  if (raw.health === undefined) combat.health = 50;
+
   if (!ok) {
     report(ctx, where, "error", `this character was skipped — fix the file and reload`);
     return null;
@@ -897,6 +953,37 @@ function takeCharacter(ctx: Ctx, id: string, raw: Raw, chapters: ChapterSource[]
     report(ctx, where, "warning", `chapter files start at ${ordered[0].number} — expected chapter1.json`);
   }
 
+  // Starter connection stats (trust/friendship), default 0.
+  const initialStats: Stats = { ...STAT_START };
+  if (raw.trust !== undefined) {
+    if (!isNum(raw.trust) || raw.trust < -50 || raw.trust > 50) {
+      report(ctx, where, "error", `"trust" must be a number between -50 and 50`);
+    } else initialStats.trust = raw.trust;
+  }
+  if (raw.friendship !== undefined) {
+    if (!isNum(raw.friendship) || raw.friendship < -50 || raw.friendship > 50) {
+      report(ctx, where, "error", `"friendship" must be a number between -50 and 50`);
+    } else initialStats.friendship = raw.friendship;
+  }
+  if (raw.stats !== undefined) {
+    if (!isObj(raw.stats)) {
+      report(ctx, where, "error", `"stats" must be an object`);
+    } else {
+      for (const key of Object.keys(raw.stats)) {
+        if (!isStat(key)) {
+          report(ctx, where, "error", `unknown stat "${key}"`);
+          continue;
+        }
+        const v = (raw.stats as Raw)[key];
+        if (!isNum(v) || v < -50 || v > 50) {
+          report(ctx, where, "error", `"stats.${key}" must be a number between -50 and 50`);
+        } else {
+          initialStats[key] = v;
+        }
+      }
+    }
+  }
+
   const name = raw.name as string;
   let profile: Profile | undefined;
   const hasProfileFields = ["age", "birthday", "tagline", "interests", "likes", "dislikes"].some((key) => raw[key] !== undefined);
@@ -926,6 +1013,9 @@ function takeCharacter(ctx: Ctx, id: string, raw: Raw, chapters: ChapterSource[]
     color: isText(raw.color) ? raw.color : DEFAULT_COLOR,
     avatar: isText(raw.avatar) ? raw.avatar : undefined,
     teaser: isText(raw.teaser) ? raw.teaser : "",
+    type: charType,
+    mainstat: mainstat,
+    combat: charType ? { ...combat } : undefined,
     script: chat,
     storeKey: `sr-chat-${id}`,
     startUnlocked: raw.unlocked === true,
@@ -937,7 +1027,8 @@ function takeCharacter(ctx: Ctx, id: string, raw: Raw, chapters: ChapterSource[]
       name,
       initial: isText(raw.initial) ? raw.initial : name.trim()[0].toUpperCase(),
       unlocked: raw.unlocked === true,
-      stats: { ...STAT_START },
+      stats: { ...initialStats },
+      combat: charType ? { ...combat } : undefined,
       clockUnits: 0,
     },
   };
@@ -945,18 +1036,6 @@ function takeCharacter(ctx: Ctx, id: string, raw: Raw, chapters: ChapterSource[]
 }
 
 /** Visits every step, including the ones nested inside choices and conditional paths. */
-function eachNestedStep(steps: Step[], visit: (s: Step) => void): void {
-  for (const s of steps) {
-    visit(s);
-    if (s.t === "choice") for (const o of s.opts) eachNestedStep(o.then, visit);
-    else if (s.t === "if") eachNestedStep(s.then, visit);
-    else if (s.t === "gate") {
-      eachNestedStep(s.then, visit);
-      if (s.otherwise) eachNestedStep(s.otherwise, visit);
-    } else if (s.t === "quiz") eachNestedStep(s.pass, visit);
-  }
-}
-
 /**
  * A `reveal` has to name something the profile actually holds, or the fact
  * would never appear. Runs once every character is built, so it can follow
@@ -991,115 +1070,6 @@ type StoryReferences = {
   reads: { key: string; file: string; onlyWhenPresent: boolean }[];
   milestoneReads: { id: string; file: string }[];
 };
-
-function validateStoryReferences(
-  built: Map<string, Built>,
-  places: Map<string, Place>,
-  ids: Set<string>,
-  assets: Set<string>,
-  sounds: Set<string>,
-  soundFiles: Set<string>,
-  issues: Issue[],
-): void {
-  const refs = new Map<string, StoryReferences>();
-  const entry = (scope: string): StoryReferences => {
-    let value = refs.get(scope);
-    if (!value) {
-      value = { milestones: new Set(), writes: new Set(), reads: [], milestoneReads: [] };
-      refs.set(scope, value);
-    }
-    return value;
-  };
-
-  const visit = (steps: Step[], scope: string, file: string, depth: number): void => {
-    if (depth > 16) return;
-    for (const step of steps) {
-      const own = entry(scope);
-      if (step.t === "milestone") {
-        own.milestones.add(step.id);
-        own.writes.add(`_m:${step.id}`);
-      } else if (step.t === "ask") {
-        own.writes.add(step.key);
-      } else if (step.t === "quiz") {
-        own.writes.add(`_q:${step.id}`);
-      } else if (step.t === "set") {
-        entry(step.chat ?? scope).writes.add(step.key);
-      } else if (step.t === "if" && (step.is !== undefined || step.any !== undefined)) {
-        own.reads.push({ key: step.key, file, onlyWhenPresent: true });
-      }
-
-      if (step.t === "choice") {
-        for (const option of step.opts) {
-          if (option.requires?.milestone) {
-            entry(option.requires.chat ?? scope).milestoneReads.push({ id: option.requires.milestone, file });
-          }
-          if (option.requires?.state) {
-            const condition = option.requires.state;
-            entry(scope).reads.push({
-              key: condition.key,
-              file,
-              onlyWhenPresent: condition.is !== undefined,
-            });
-          }
-          visit(option.then, scope, file, depth + 1);
-        }
-      } else if (step.t === "if") {
-        visit(step.then, scope, file, depth + 1);
-      } else if (step.t === "gate") {
-        visit(step.then, scope, file, depth + 1);
-        if (step.otherwise) visit(step.otherwise, scope, file, depth + 1);
-      } else if (step.t === "quiz") {
-        visit(step.pass, scope, file, depth + 1);
-      } else if (step.t === "append") {
-        visit(step.steps, step.chat, file, depth + 1);
-      }
-    }
-  };
-
-  for (const [id, item] of built) {
-    for (const chapter of item.chapters) visit(chapter.steps, id, chapter.file, 0);
-    const endings = new Set<string>();
-    eachNestedStep(item.contact.script, (step) => {
-      if (step.t === "ending") endings.add(step.kind);
-    });
-    if (item.contact.script.length > 0 && endings.size === 0) {
-      report(
-        { file: item.profileFile, issues, ids, assets, sounds, soundFiles },
-        "chat",
-        "warning",
-        `no route contains a chapter-end, story-end or continue-elsewhere marker`,
-      );
-    }
-  }
-
-  for (const [placeId, place] of places) {
-    for (const chat of place.chats) visit(chat.script, `${placeId}/${chat.id}`, `${placeId}.json`, 0);
-  }
-
-  for (const [scope, refsForScope] of refs) {
-    const ctx: Ctx = { file: scope, issues, ids, assets, sounds, soundFiles };
-    for (const read of refsForScope.reads) {
-      if (read.onlyWhenPresent && !refsForScope.writes.has(read.key)) {
-        report(
-          { ...ctx, file: read.file },
-          "story references",
-          "warning",
-          `condition checks "${read.key}", but this chat never remembers or asks for that value`,
-        );
-      }
-    }
-    for (const read of refsForScope.milestoneReads) {
-      if (!refsForScope.milestones.has(read.id)) {
-        report(
-          { ...ctx, file: read.file },
-          "story references",
-          "warning",
-          `no milestone "${read.id}" is declared in "${scope}" — this reply may stay locked`,
-        );
-      }
-    }
-  }
-}
 
 // ---- place files ------------------------------------------------------------
 
@@ -1227,6 +1197,7 @@ function takePlace(ctx: Ctx, id: string, raw: Raw): Place | null {
           stats: { ...STAT_START },
           unlocked: startUnlocked,
           done: false,
+          visited: false,
           clockUnits: 0,
         },
       });
@@ -1414,9 +1385,11 @@ function eachImage(
   }
 }
 
-/** A picture named `misc_…` belongs to the story, not the character who sends it. */
-const isGeneralPicture = (name: string): boolean =>
-  (name.split("/").pop() ?? name).startsWith("misc_");
+/** A picture in misc/ or named `misc_…` belongs to the story, not a character. */
+const isGeneralPicture = (name: string): boolean => {
+  const normalized = name.split("\\").join("/");
+  return normalized.startsWith("misc/") || (normalized.split("/").pop() ?? normalized).startsWith("misc_");
+};
 
 /**
  * Builds the Gallery from every picture a script can send, not just the ones
@@ -1608,6 +1581,7 @@ export function buildStory(
   meta?: unknown,
   soundFiles?: string[],
   soundConfig?: unknown,
+  enemies?: Record<string, unknown>,
 ): {
   cast: Cast;
   issues: Issue[];
@@ -1763,6 +1737,39 @@ export function buildStory(
     .sort((a, b) => a[1].order - b[1].order || a[0].localeCompare(b[0]))
     .map(([id]) => id);
 
+  const enemiesOut: Record<string, Enemy> = {};
+  for (const [key, raw] of Object.entries(enemies ?? {})) {
+    const id = (key.split("/").pop() ?? key).replace(/\.json$/, "");
+    const where = `enemies/${key}.json`;
+    if (!isObj(raw)) {
+      issues.push({ file: where, where: where, level: "error", message: "enemy file must contain a JSON object" });
+      continue;
+    }
+    const enemyCtx: Ctx = { file: where, issues, ids: new Set(), assets: assetNames };
+    const ENEMY_FIELDS = { required: ["name", "health", "attack", "mainstat"], optional: ["defense", "type", "description", "color"] };
+    let ok = fields(enemyCtx, where, raw, ENEMY_FIELDS.required, ENEMY_FIELDS.optional);
+    if (!isText(raw.name)) { report(enemyCtx, where, "error", `"name" must be text`); ok = false; }
+    if (!isNum(raw.health) || raw.health < 1) { report(enemyCtx, where, "error", `"health" must be a positive number`); ok = false; }
+    if (!isNum(raw.attack) || raw.attack < 0) { report(enemyCtx, where, "error", `"attack" must be a non-negative number`); ok = false; }
+    if (!isNum(raw.mainstat) || raw.mainstat < 0) { report(enemyCtx, where, "error", `"mainstat" must be a non-negative number`); ok = false; }
+    if (raw.defense !== undefined && (!isNum(raw.defense) || raw.defense < 0)) { report(enemyCtx, where, "error", `"defense" must be a non-negative number`); ok = false; }
+    if (raw.type !== undefined && (typeof raw.type !== "string" || !CHARACTER_TYPES.includes(raw.type as CharacterType))) {
+      report(enemyCtx, where, "error", `"type" must be one of ${CHARACTER_TYPES.join(", ")}`);
+      ok = false;
+    }
+    if (!ok) continue;
+    enemiesOut[id] = {
+      id,
+      name: raw.name as string,
+      health: raw.health as number,
+      attack: raw.attack as number,
+      mainstat: raw.mainstat as number,
+      defense: isNum(raw.defense) ? raw.defense : 0,
+      type: raw.type as CharacterType | undefined,
+      description: isText(raw.description) ? raw.description : undefined,
+    };
+  }
+
   const gallery = buildGallery(contacts, order, placesOut, placeOrder);
 
   let story: StoryMeta = {};
@@ -1816,7 +1823,7 @@ export function buildStory(
   }
 
   return {
-    cast: { contacts, order, profiles, places: placesOut, placeOrder, assets, gallery },
+    cast: { contacts, order, profiles, places: placesOut, placeOrder, assets, gallery, enemies: enemiesOut },
     issues,
     story,
     balance,

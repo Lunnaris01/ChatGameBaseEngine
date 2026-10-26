@@ -14,31 +14,71 @@
     <a href="#main" data-ui="skip" class="sr-only focus:not-sr-only focus:absolute focus:m-2 focus:rounded focus:bg-tick-400 focus:p-2 focus:font-bold focus:text-chat-950">Skip to content</a>
     <main id="main" tabindex="-1" class="flex h-dvh w-full flex-col bg-chat-950 outline-none sm:max-w-[480px] sm:border-x sm:border-chat-700">
       <h1 class="sr-only">A Map to Somewhere</h1>
-      <div id="view-list" class="flex h-full flex-col">
+      <div id="view-home" class="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+        <img id="home-wallpaper" src="./story/assets/system/default_background.png" alt="" width="940" height="1672" class="pointer-events-none absolute inset-0 h-full w-full object-cover" />
+        <div aria-hidden="true" class="pointer-events-none absolute inset-0 bg-black/45"></div>
+        <div aria-hidden="true" class="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/10 via-black/15 to-black/65"></div>
+        <div class="relative flex min-h-0 flex-1 flex-col px-4 pb-5 text-white">
+          <header aria-label="Phone status" data-ui-aria="home.status" class="flex min-h-14 items-center justify-between px-2 text-sm font-semibold">
+            <span id="home-time">9:41</span>
+            <span aria-hidden="true" class="tracking-wide">▂▄▆　◔　▰</span>
+          </header>
+          <h2 id="home-heading" data-ui="home.title" class="sr-only">Home</h2>
+          <nav aria-label="Apps" data-ui-aria="home.apps" class="grid flex-1 grid-cols-3 content-start gap-x-2 gap-y-5 pt-5">
+            <button id="home-chats" type="button" data-home-section="list" class="flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl px-1 py-2 text-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tick-400">
+              <span aria-hidden="true" class="flex h-14 w-14 items-center justify-center rounded-[1.125rem] border border-white/30 bg-white/20 text-3xl shadow-lg backdrop-blur-sm">💬</span>
+              <span data-ui="nav.chats" class="max-w-full truncate text-xs font-semibold drop-shadow">Chats</span>
+            </button>
+            <button id="home-places" type="button" data-home-section="places" class="flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl px-1 py-2 text-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tick-400">
+              <span aria-hidden="true" class="flex h-14 w-14 items-center justify-center rounded-[1.125rem] border border-white/30 bg-white/20 text-3xl shadow-lg backdrop-blur-sm">📍</span>
+              <span data-ui="nav.places" class="max-w-full truncate text-xs font-semibold drop-shadow">Places</span>
+            </button>
+            <button id="home-gallery" type="button" data-home-section="gallery" class="flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl px-1 py-2 text-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tick-400">
+              <span aria-hidden="true" class="flex h-14 w-14 items-center justify-center rounded-[1.125rem] border border-white/30 bg-white/20 text-3xl shadow-lg backdrop-blur-sm">🖼️</span>
+              <span data-ui="nav.gallery" class="max-w-full truncate text-xs font-semibold drop-shadow">Gallery</span>
+            </button>
+            <button id="home-characters" type="button" data-home-section="chars" class="flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl px-1 py-2 text-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tick-400">
+              <span aria-hidden="true" class="flex h-14 w-14 items-center justify-center rounded-[1.125rem] border border-white/30 bg-white/20 text-3xl shadow-lg backdrop-blur-sm">👥</span>
+              <span data-ui="nav.characters" class="max-w-full truncate text-xs font-semibold drop-shadow">Characters</span>
+            </button>
+            <button id="home-settings" type="button" data-home-section="settings" class="flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl px-1 py-2 text-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tick-400">
+              <span aria-hidden="true" class="flex h-14 w-14 items-center justify-center rounded-[1.125rem] border border-white/30 bg-white/20 text-3xl shadow-lg backdrop-blur-sm">⚙️</span>
+              <span data-ui="nav.settings" class="max-w-full truncate text-xs font-semibold drop-shadow">Settings</span>
+            </button>
+          </nav>
+          <p id="home-story-title" class="pb-1 text-center text-sm font-semibold drop-shadow">A Map to Somewhere</p>
+        </div>
+      </div>
+
+      <div id="view-list" class="hidden min-h-0 flex-1 flex-col">
         <header class="flex items-center gap-3 bg-chat-800 px-4 py-3">
+          <button type="button" data-home-back data-ui-aria="nav.home" aria-label="Back to Home" class="flex min-h-11 min-w-11 items-center justify-center rounded-full text-xl text-ink-300">←</button>
           <h2 data-ui="nav.chats" class="text-lg font-bold">Chats</h2>
-          <a href="./about.html" data-ui-aria="action.howToPlay" aria-label="How to play" class="ml-auto flex min-h-11 min-w-11 items-center justify-center rounded-full text-lg text-ink-300">ⓘ</a>
         </header>
         <div id="chatlist" class="flex-1 space-y-1 overflow-y-auto px-2 py-3"></div>
       </div>
 
-      <div id="view-places" class="hidden h-full flex-col">
+      <div id="view-places" class="hidden min-h-0 flex-1 flex-col">
         <header class="flex items-center gap-3 bg-chat-800 px-4 py-3">
+          <button type="button" data-home-back data-ui-aria="nav.home" aria-label="Back to Home" class="flex min-h-11 min-w-11 items-center justify-center rounded-full text-xl text-ink-300">←</button>
           <h2 data-ui="nav.places" class="text-lg font-bold">Places</h2>
         </header>
+        <p id="places-status" role="status" aria-live="polite" class="sr-only"></p>
         <div id="placelist" class="flex-1 space-y-4 overflow-y-auto px-2 py-3"></div>
       </div>
 
-      <div id="view-gallery" class="hidden h-full flex-col">
+      <div id="view-gallery" class="hidden min-h-0 flex-1 flex-col">
         <header class="flex items-center gap-3 bg-chat-800 px-4 py-3">
+          <button type="button" data-home-back data-ui-aria="nav.home" aria-label="Back to Home" class="flex min-h-11 min-w-11 items-center justify-center rounded-full text-xl text-ink-300">←</button>
           <h2 data-ui="nav.gallery" class="text-lg font-bold">Gallery</h2>
           <p id="gallery-count" class="ml-auto text-sm text-ink-300"></p>
         </header>
         <div id="gallery-list" class="flex-1 space-y-5 overflow-y-auto p-3"></div>
       </div>
 
-      <div id="view-settings" class="hidden h-full flex-col">
+      <div id="view-settings" class="hidden min-h-0 flex-1 flex-col">
         <header class="flex items-center gap-3 bg-chat-800 px-4 py-3">
+          <button type="button" data-home-back data-ui-aria="nav.home" aria-label="Back to Home" class="flex min-h-11 min-w-11 items-center justify-center rounded-full text-xl text-ink-300">←</button>
           <h2 data-ui="nav.settings" class="text-lg font-bold">Settings</h2>
         </header>
         <div class="flex-1 space-y-6 overflow-y-auto px-4 py-6">
@@ -55,6 +95,24 @@
               </div>
             </dl>
             <p class="mt-3"><a href="./about.html" data-ui="action.howToPlay" class="inline-flex min-h-11 items-center rounded-full border border-out-500 px-5 py-2 text-sm font-semibold text-tick-400">How to play</a></p>
+          </section>
+
+          <section aria-labelledby="settings-home-background">
+            <h2 id="settings-home-background" data-ui="settings.homeBackground" class="text-sm font-bold uppercase tracking-wide text-tick-400">Home screen</h2>
+            <p data-ui="settings.homeBackgroundDescription" class="mt-2 text-sm text-ink-300">Choose a wallpaper from a photo you have seen in the story.</p>
+            <button id="home-background-reset" type="button" data-ui="settings.backgroundReset" class="mt-3 inline-flex min-h-11 items-center rounded-full border border-out-500 px-5 py-2 text-sm font-semibold text-tick-400">Reset Home background</button>
+            <p id="settings-background-status" role="status" aria-live="polite" class="mt-2 text-xs text-ink-300"></p>
+          </section>
+
+          <section aria-labelledby="settings-quickbar">
+            <button id="quickbar-toggle" type="button" class="flex w-full items-center justify-between text-sm font-bold uppercase tracking-wide text-tick-400">
+              <span id="settings-quickbar">Quickbar</span>
+              <span id="quickbar-triangle" aria-hidden="true">▲</span>
+            </button>
+            <div id="quickbar-panel" class="mt-2">
+              <p class="text-sm text-ink-300">Choose which apps appear in the bottom quickbar.</p>
+              <div id="quickbar-options" class="mt-3 space-y-2"></div>
+            </div>
           </section>
 
           <section aria-labelledby="settings-speed">
@@ -194,14 +252,15 @@
         </div>
       </div>
 
-      <div id="view-chars" class="hidden h-full flex-col">
+      <div id="view-chars" class="hidden min-h-0 flex-1 flex-col">
         <header class="flex items-center gap-2 bg-chat-800 px-4 py-2">
+          <button type="button" data-home-back data-ui-aria="nav.home" aria-label="Back to Home" class="flex min-h-11 min-w-11 items-center justify-center rounded-full text-xl text-ink-300">←</button>
           <h2 data-ui="nav.characters" class="text-lg font-bold">Characters</h2>
         </header>
         <div id="chargrid" class="grid flex-1 grid-cols-2 content-start gap-3 overflow-y-auto p-4"></div>
       </div>
 
-      <div id="view-profile" class="hidden h-full flex-col">
+      <div id="view-profile" class="hidden min-h-0 flex-1 flex-col">
         <header class="flex items-center gap-2 bg-chat-800 px-2 py-2">
           <button id="profile-back" type="button" aria-label="Back" class="flex min-h-11 min-w-11 items-center justify-center rounded-full text-xl text-ink-300">←</button>
           <h2 data-ui="profile.title" class="text-lg font-bold">Profile</h2>
@@ -238,13 +297,23 @@
         </div>
       </div>
 
-      <nav id="tabs" aria-label="Sections" data-ui-aria="nav.label" class="flex border-t border-chat-700 bg-chat-800">
-        <button id="tab-chats" type="button" class="flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-xs font-bold text-tick-400"><span aria-hidden="true" class="text-xl">💬</span><span data-ui="nav.chats">Chats</span></button>
-        <button id="tab-places" type="button" class="flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-xs font-bold text-ink-300"><span aria-hidden="true" class="text-xl">📍</span><span data-ui="nav.places">Places</span></button>
-        <button id="tab-gallery" type="button" class="flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-xs font-bold text-ink-300"><span aria-hidden="true" class="text-xl">🖼️</span><span data-ui="nav.gallery">Gallery</span></button>
-        <button id="tab-chars" type="button" class="flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-xs font-bold text-ink-300"><span aria-hidden="true" class="text-xl">👥</span><span data-ui="nav.characters">Characters</span></button>
-        <button id="tab-settings" type="button" class="flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-xs font-bold text-ink-300"><span aria-hidden="true" class="text-xl">⚙️</span><span data-ui="nav.settings">Settings</span></button>
+      <nav id="tabs" aria-label="Sections" data-ui-aria="nav.label" class="flex shrink-0 border-t border-chat-700 bg-chat-800">
+        <button id="tab-chats" type="button" data-quick-section="list" class="flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 text-xs font-bold text-ink-300"><span aria-hidden="true" class="text-xl">💬</span><span class="block max-w-full truncate" data-ui="nav.chats">Chats</span></button>
+        <button id="tab-places" type="button" data-quick-section="places" class="flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 text-xs font-bold text-ink-300"><span aria-hidden="true" class="text-xl">📍</span><span class="block max-w-full truncate" data-ui="nav.places">Places</span></button>
+        <button id="tab-gallery" type="button" data-quick-section="gallery" class="flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 text-xs font-bold text-ink-300"><span aria-hidden="true" class="text-xl">🖼️</span><span class="block max-w-full truncate" data-ui="nav.gallery">Gallery</span></button>
+        <button id="tab-chars" type="button" data-quick-section="chars" class="flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 text-xs font-bold text-ink-300"><span aria-hidden="true" class="text-xl">👥</span><span class="block max-w-full truncate" data-ui="nav.characters">Characters</span></button>
+        <button id="tab-settings" type="button" data-quick-section="settings" class="flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 text-xs font-bold text-ink-300"><span aria-hidden="true" class="text-xl">⚙️</span><span class="block max-w-full truncate" data-ui="nav.settings">Settings</span></button>
       </nav>
+
+      <dialog id="death-confirm" aria-labelledby="death-confirm-title" aria-modal="true" class="w-[calc(100%-2rem)] max-w-sm rounded-2xl border border-chat-700 bg-chat-800 p-5 text-ink-100 backdrop:bg-black/80">
+        <h2 id="death-confirm-title" class="text-lg font-bold">You have been defeated</h2>
+        <p class="mt-2 text-sm text-ink-300">Load your last autosave or restart the game.</p>
+        <div class="mt-4 flex flex-wrap gap-2">
+          <button id="death-load" type="button" class="inline-flex min-h-11 items-center rounded-full bg-out-600 px-5 py-2 text-sm font-bold text-white">Load autosave</button>
+          <button id="death-restart" type="button" class="inline-flex min-h-11 items-center rounded-full border border-out-500 px-5 py-2 text-sm font-semibold text-tick-400">Restart</button>
+          <button id="death-cancel" type="button" class="inline-flex min-h-11 items-center rounded-full border border-chat-700 px-5 py-2 text-sm text-ink-300">Cancel</button>
+        </div>
+      </dialog>
 
       <dialog id="restart-confirm" aria-labelledby="restart-confirm-title" class="w-[calc(100%-2rem)] max-w-sm rounded-2xl border border-chat-700 bg-chat-800 p-5 text-ink-100 backdrop:bg-black/80">
         <h2 id="restart-confirm-title" data-ui="settings.restartTitle" class="text-lg font-bold">Restart this chat?</h2>
@@ -275,11 +344,59 @@
             <p id="lightbox-cap" class="text-sm text-ink-300" aria-live="polite"></p>
             <p id="lightbox-pos" class="shrink-0 text-xs tabular-nums text-ink-300"></p>
           </div>
-          <p class="px-1"><button id="lightbox-close" type="button" data-ui="action.close" class="mt-1 inline-flex min-h-11 items-center rounded-full border border-out-500 px-5 py-2 text-sm font-semibold text-tick-400">Close</button></p>
+          <div class="flex items-center justify-between gap-2 px-1">
+            <button id="lightbox-close" type="button" data-ui="action.close" class="mt-1 inline-flex min-h-11 items-center rounded-full border border-out-500 px-5 py-2 text-sm font-semibold text-tick-400">Close</button>
+            <button id="lightbox-background" type="button" data-ui="gallery.background" data-ui-aria="gallery.backgroundAction" class="mt-1 inline-flex min-h-11 items-center rounded-full bg-out-600 px-5 py-2 text-sm font-bold text-white">Background</button>
+          </div>
+          <p id="lightbox-background-status" role="status" aria-live="polite" class="mt-2 px-1 text-xs text-ink-300"></p>
         </div>
       </div>
 
-      <div id="view-chat" class="hidden h-full flex-col">
+      <div id="view-combat" class="hidden min-h-0 flex-1 flex-col">
+        <header class="flex items-center gap-3 bg-chat-800 px-4 py-3">
+          <h2 class="text-lg font-bold">Combat</h2>
+        </header>
+        <div class="flex-1 space-y-4 overflow-y-auto p-4">
+          <section class="rounded-2xl border border-chat-700 bg-chat-800 p-4">
+            <h3 id="combat-enemy-name" class="text-lg font-bold"></h3>
+            <p id="combat-enemy-desc" class="mt-1 text-sm text-ink-300"></p>
+            <p id="combat-enemy-health" class="mt-2 text-sm"></p>
+            <p id="combat-player-health" class="mt-1 text-sm"></p>
+          </section>
+          <section id="combat-log" role="log" aria-live="polite" class="space-y-2 text-sm text-ink-200"></section>
+          <div class="flex gap-2">
+            <button id="combat-attack" type="button" class="inline-flex min-h-11 items-center rounded-full bg-out-600 px-5 py-2 text-sm font-bold text-white">Attack</button>
+            <button id="combat-potion" type="button" class="inline-flex min-h-11 items-center rounded-full border border-out-500 px-5 py-2 text-sm font-semibold text-tick-400">Drink Potion</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="view-player" class="hidden min-h-0 flex-1 flex-col">
+        <header class="flex items-center gap-2 bg-chat-800 px-2 py-2">
+          <button id="player-back" type="button" aria-label="Back" class="flex min-h-11 min-w-11 items-center justify-center rounded-full text-xl text-ink-300">←</button>
+          <h2 class="text-lg font-bold">Your Character</h2>
+        </header>
+        <div class="flex-1 space-y-4 overflow-y-auto p-4">
+          <section class="rounded-2xl bg-chat-800 p-4">
+            <h3 id="player-name" class="text-lg font-bold"></h3>
+            <p id="player-type" class="text-sm text-ink-300"></p>
+          </section>
+          <section class="rounded-2xl bg-chat-800 p-4">
+            <h3 class="font-bold">Combat Stats</h3>
+            <ul id="player-combat" class="mt-2 space-y-1 text-sm"></ul>
+          </section>
+          <section class="rounded-2xl bg-chat-800 p-4">
+            <h3 class="font-bold">Equipment</h3>
+            <ul id="player-equipment" class="mt-2 space-y-1 text-sm"></ul>
+          </section>
+          <section class="rounded-2xl bg-chat-800 p-4">
+            <h3 class="font-bold">Inventory</h3>
+            <ul id="player-inventory" class="mt-2 space-y-1 text-sm"></ul>
+          </section>
+        </div>
+      </div>
+
+      <div id="view-chat" class="hidden min-h-0 flex-1 flex-col">
         <header class="flex items-center gap-2 bg-chat-800 px-2 py-2">
           <button id="back" type="button" aria-label="Back to chats" data-ui-aria="chat.backToChats" class="flex min-h-11 min-w-11 items-center justify-center rounded-full text-xl text-ink-300">←</button>
           <button id="who" type="button" aria-label="View contact profile" data-ui-aria="chat.viewProfile" class="flex min-w-0 flex-1 items-center gap-2 text-left">
@@ -289,8 +406,6 @@
               <span id="presence" data-ui="chat.online" class="block truncate text-xs text-ink-300">online</span>
             </span>
           </button>
-          <a href="./about.html" aria-label="How to play" data-ui-aria="action.howToPlay" class="flex min-h-11 min-w-11 items-center justify-center rounded-full text-lg text-ink-300">ⓘ</a>
-          <button id="restart" type="button" aria-label="Restart this chat" data-ui-aria="chat.restart" aria-haspopup="dialog" class="flex min-h-11 min-w-11 items-center justify-center rounded-full text-lg text-ink-300">↺</button>
         </header>
 
         <div id="log" role="log" aria-live="polite" aria-label="Chat messages" class="flex-1 space-y-2 overflow-y-auto px-3 py-4"></div>

@@ -10,6 +10,8 @@ export type StoryFiles = {
   characters: Record<string, unknown>;
   /** File name (e.g. `cafe.json`) -> parsed JSON. */
   places: Record<string, unknown>;
+  /** Enemy file path (e.g. `forest/goblin-spy.json`) -> parsed JSON. */
+  enemies?: Record<string, unknown>;
   /** Path inside assets/ without extension (e.g. `alex/chapter1/photo`) -> bundled URL. */
   assets: Record<string, string>;
   /** Path inside assets/sounds/ without extension (e.g. `them_chime`) -> bundled URL. */
@@ -35,6 +37,11 @@ export function discoverStory(): StoryFiles {
   }) as Record<string, unknown>;
 
   const placeFiles = import.meta.glob("../story/locations/*.json", {
+    eager: true,
+    import: "default",
+  }) as Record<string, unknown>;
+
+  const enemyFiles = import.meta.glob("../story/locations/**/enemies/*.json", {
     eager: true,
     import: "default",
   }) as Record<string, unknown>;
@@ -69,6 +76,11 @@ export function discoverStory(): StoryFiles {
   const places: Record<string, unknown> = {};
   for (const [path, data] of Object.entries(placeFiles)) places[baseName(path)] = data;
 
+  const enemies: Record<string, unknown> = {};
+  for (const [path, data] of Object.entries(enemyFiles)) {
+    enemies[baseName(path).replace(/\.json$/, "")] = data;
+  }
+
   const assets: Record<string, string> = {};
   for (const [path, url] of Object.entries(assetFiles)) {
     assets[assetName(path)] = url;
@@ -82,6 +94,7 @@ export function discoverStory(): StoryFiles {
   return {
     characters,
     places,
+    enemies,
     assets,
     sounds,
     soundsConfig: Object.values(soundConfigFiles)[0],

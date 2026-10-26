@@ -19,6 +19,10 @@ const PREFERENCES = new Set([
   "sr-dev",
   "sr-nsfw",
   "sr-name",
+  "sr-quickbar",
+  "sr-quickbar-v2",
+  "sr-quickbar-open",
+  "sr-home-background",
   "sr-sound",
   "sr-dev-mode",
   "sr-debug",
@@ -27,6 +31,7 @@ const PREFERENCES = new Set([
 export function isGameStorageKey(key: string): boolean {
   return (
     PREFERENCES.has(key) ||
+    key === "sr-player" ||
     key.startsWith("sr-chat-") ||
     key.startsWith("sr-place-") ||
     /^sr-save-[1-6]$/.test(key)

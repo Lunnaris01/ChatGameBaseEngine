@@ -119,7 +119,7 @@ validation, localization, and runner-generation cancellation. A GitHub Actions
 workflow runs checks and a production build on pushes and pull requests.
 
 **Value:** moves regressions from manual discovery into repeatable checks. The
-current suite contains 22 passing tests.
+current suite contains 27 passing tests.
 
 ### 10. Runtime responsibilities have clearer boundaries
 
@@ -156,9 +156,46 @@ longer pause within the validated limit.
 **Value:** prevents rapid bursts of long scripted player messages while avoiding
 the same fixed wait for every short reply.
 
+### 13. Player money, location costs, and a replayable mini-game
+
+The player starts with `$100`. The local wallet follows browser saves, manual
+save slots, and portable backups. Locations may set a whole-dollar `cost`; it is
+charged once when a player first opens each scene there, and revisits are free.
+The Games quickbar tab currently offers a four-card memory match (two pairs)
+that pays `$20` for each completed round. The sample Teahouse demonstrates a
+`$40` first-entry scene cost. The minigame and optional prices do not gate the
+character story route.
+
+**Value:** establishes the reusable economy loop—earn money through play, then
+spend it on optional dates—without making the romance depend on grinding.
+
+### 14. The game now opens to a phone-style Home screen
+
+The Home launcher uses a locally bundled, credited wallpaper and shows app icons
+for Chats, Places, Gallery, Games, Characters and Settings. The four-item dock
+keeps Chats, Places, Gallery and Settings available across app screens, and
+screen-header back arrows return to Home. The chat and in-person location
+threads retain their own back behavior and continue to hide the dock.
+
+**Value:** gives the interface a familiar phone metaphor without adding remote
+runtime assets or making navigation harder on a small screen.
+
+### 15. Players can personalize the Home wallpaper with seen photos
+
+The default wallpaper now comes from `src/story/assets/system/default_background.png`.
+Story-specific generic images belong under `assets/misc/` and are automatically
+filed in the General Gallery when referenced by a photo step. A revealed photo
+in the Gallery lightbox can become the Home wallpaper; hidden placeholders are
+not eligible. The choice is a local preference included in portable backups,
+and Settings can restore the system default. No image host is contacted at
+runtime.
+
+**Value:** lets a player's explored story personalize the launcher while
+respecting the story's reveal state and the project's local-first asset model.
+
 ## Verification snapshot
 
-- `bun run check`: strict TypeScript, story validation, and 22 tests pass.
+- `bun run check`: strict TypeScript, story validation, and 27 tests pass.
 - `bun run build`: Vite production build and offline precache generation pass.
 - The dev server returns the game and Story Studio at 375px; headless Chrome
   loads the Studio, validates the bundled story, and renders the route outline.

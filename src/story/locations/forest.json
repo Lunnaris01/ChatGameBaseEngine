@@ -1,0 +1,35 @@
+{
+  "name": "Forest",
+  "icon": "🌲",
+  "color": "#166534",
+  "teaser": "Gather herbs near the village.",
+  "order": 1,
+  "host": "tutorial",
+   "chats": [
+    {
+      "id": "arrive",
+      "title": "Enter the Forest",
+      "teaser": "Scout and gather herbs.",
+      "unlocked": false,
+      "at": "09:00",
+      "chat": [
+        { "type": "narrate", "text": "You step into the forest. Birds call overhead." },
+        { "type": "thought", "text": "The air smells of moss and rain." },
+        { "type": "narrate", "text": "You scout the area and find some herbs quickly." },
+        { "type": "thought", "text": "Not bad for a first day." },
+        { "type": "narrate", "text": "A goblin spy steps out from behind a tree." },
+        { "type": "autosave" },
+        { "type": "choice", "options": [
+          { "label": "Flee", "say": "Run!", "then": [
+            { "type": "narrate", "text": "You try to flee, but the goblin is faster. You must fight." },
+            { "type": "combat", "enemy": "goblin-spy" }
+          ] },
+          { "label": "Fight", "say": "I'll fight!", "then": [
+            { "type": "combat", "enemy": "goblin-spy" }
+          ] }
+        ] },
+        { "type": "narrate", "text": "The forest falls quiet again." }
+      ]
+    }
+  ]
+}

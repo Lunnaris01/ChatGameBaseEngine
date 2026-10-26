@@ -8,6 +8,7 @@ describe("game storage", () => {
     const backing = createMemoryStorage();
     backing.setItem("unrelated", "keep me");
     backing.setItem("sr-chat-mai", "{}");
+    backing.setItem("sr-home-background", "mai/chapter1/window");
     backing.setItem("sr-studio-preview", "{} ");
     const storage = createGameStorage(backing);
 
@@ -15,6 +16,7 @@ describe("game storage", () => {
 
     expect(backing.getItem("unrelated")).toBe("keep me");
     expect(backing.getItem("sr-chat-mai")).toBeNull();
+    expect(backing.getItem("sr-home-background")).toBeNull();
     expect(backing.getItem("sr-studio-preview")).toBe("{} ");
   });
 
@@ -34,6 +36,7 @@ describe("local backups", () => {
     const data = {
       "sr-chat-mai": JSON.stringify({ transcript: [], queue: [], state: {}, stats: {} }),
       "sr-text-speed": "quick",
+      "sr-home-background": "mai/avatar",
       unrelated: "must not be included",
     };
     const backup = makeBackup(data, "Mai's Test", new Date("2026-10-24T12:00:00.000Z"));
@@ -44,6 +47,7 @@ describe("local backups", () => {
       expect(parsed.backup.story).toBe("Mai's Test");
       expect(parsed.backup.data.unrelated).toBeUndefined();
       expect(parsed.backup.data["sr-chat-mai"]).toBe(data["sr-chat-mai"]);
+      expect(parsed.backup.data["sr-home-background"]).toBe("mai/avatar");
     }
   });
 
@@ -71,6 +75,16 @@ describe("local backups", () => {
       },
     };
 
+    expect("error" in parseBackup(JSON.stringify(invalid))).toBe(true);
+  });
+
+  test("rejects a backup with an invalid wallet balance", () => {
+    const invalid = {
+      format: "chat-story-local-backup",
+      version: 1,
+      exportedAt: "2026-10-24T12:00:00.000Z",
+      story: "Sample",
+    };
     expect("error" in parseBackup(JSON.stringify(invalid))).toBe(true);
   });
 });

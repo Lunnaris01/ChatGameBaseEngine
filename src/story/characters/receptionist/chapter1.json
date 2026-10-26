@@ -1,0 +1,14 @@
+[
+  { "type": "chapter", "number": 1, "text": "Registration", "time": "Year 737", "at": "09:00" },
+  { "type": "them", "text": "Welcome to the Adventurer's Guild. I'll register you as a new F Rank Adventurer." },
+  { "type": "me", "text": "I want a fighting job!" },
+  { "type": "them", "text": "F ranks can only choose herb gathering jobs. You need E rank for combat missions." },
+  { "type": "me", "text": "That's boring!" },
+  { "type": "them", "text": "Don't worry. While gathering herbs you might still encounter monsters in the wild. You can fight or run." },
+  { "type": "them", "text": "Here are 3 potions as a starting gift." },
+  { "type": "remember", "key": "rank", "value": "F" },
+  { "type": "remember", "key": "addPotions", "value": "3" },
+  { "type": "them", "text": "Head to the forest near the village." },
+  { "type": "unlock-place", "place": "forest", "chat": "arrive" },
+  { "type": "story-end" }
+]

@@ -16,6 +16,13 @@ import { registerOfflineSupport } from "./pwa";
 
 registerOfflineSupport();
 
+window.addEventListener("error", (event) => {
+  console.error("Runtime error:", event.error ?? event.message);
+});
+window.addEventListener("unhandledrejection", (event) => {
+  console.error("Unhandled rejection:", event.reason);
+});
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
@@ -57,8 +64,8 @@ if (new URLSearchParams(window.location.search).has("studio-preview")) {
   window.opener = null;
 }
 
-const { characters, places, assets, sounds, soundsConfig, meta } = files;
-const { cast, issues, story } = buildStory(characters, places, assets, meta, Object.keys(sounds), soundsConfig);
+const { characters, places, assets, sounds, soundsConfig, meta, enemies } = files as any;
+const { cast, issues, story } = buildStory(characters, places, assets, meta, Object.keys(sounds), soundsConfig, enemies);
 
 const title = story.title ?? "Your Story";
 const isAboutPage = window.location.pathname.endsWith("/about.html");

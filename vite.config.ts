@@ -20,7 +20,11 @@ export default defineConfig({
   root: "src",
   plugins: [tailwindcss()],
   server: {
-    port: 8080,
+    port: 8081,
+    strictPort: true,
+  },
+  preview: {
+    port: 8081,
     strictPort: true,
   },
   build: {

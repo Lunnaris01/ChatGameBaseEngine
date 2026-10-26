@@ -1,7 +1,7 @@
 # Story bible
 
-The narrative reference for this starter's sample romance. The Tutorial remains
-the reusable player guide; in this sample it unlocks Mai and her first date.
+The narrative reference for this starter's fantasy adventure. The Tutorial remains
+the reusable player guide; in this sample it unlocks the Adventurer's Guild receptionist and a forest location.
 
 ## Premise
 
@@ -23,7 +23,7 @@ the reusable player guide; in this sample it unlocks Mai and her first date.
 
 | ID | Place | Host | Scenes / status |
 | --- | --- | --- | --- |
-| `teahouse` | The Little Teahouse | Mai | First date and an After hours follow-up. The follow-up unlocks the Riverside Garden. |
+| `teahouse` | The Little Teahouse | Mai | $40 for each new date scene (revisits free); first date and After hours follow-up. The follow-up unlocks the Riverside Garden. |
 | `riverside` | The Riverside Garden | Mai | First walk and sunset path; each scene unlocks the next. |
 
 ## Arcs and plot threads
@@ -45,6 +45,11 @@ Mai can append a gentle reminder to the Tutorial chat. The Teahouse stores the
 chosen seat locally and shares the date milestone with Mai's chat. Completing
 After hours unlocks the Riverside Garden's first walk; that scene unlocks the
 sunset path.
+
+The player begins with `$100`. The Teahouse's `$40` first-entry scene cost
+demonstrates optional location pricing; replaying a started date is free. The
+Games tab's four-card memory match pays `$20` for a completed round and can be
+replayed for more money. This economy is optional to story progression.
 
 ## Identity
 

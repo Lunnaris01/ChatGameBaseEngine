@@ -2,27 +2,31 @@
 
 ## Project
 
-This is a web-first, chat-based story-game engine and authoring starter. It uses
+This is a web-first, chat-based fantasy story-game engine and authoring starter. It uses
 Bun, Vite, Tailwind CSS v4 and strict TypeScript. The app is a phone-width shell
-with a chat list, message threads, reply choices, a gallery, character profiles,
-optional in-person conversations in Places, and Settings. There is no backend
-or account system; game progress and preferences stay in the browser's
-`localStorage`.
+with a phone-style Home launcher, chat list, message threads, reply choices, a
+gallery, character profiles (including the player's own character), Games,
+optional in-person conversations in Places, a text-based combat system, and
+Settings. There is no backend or account system; game progress and preferences
+stay in the browser's `localStorage`.
 
-The export is a clean starting point, not a finished narrative. It includes the
-reusable Tutorial, Mai's five-chapter romance test story, and Teahouse/Riverside
-scenes. Tutorial unlocks Mai. The author rewrites the sample story and replaces
-the art, places and palette for each new game.
+The export is a clean starting point, not a finished narrative. It includes a
+reusable Tutorial that explains the stat/class system and guides character
+creation, plus a short starter route: an Adventurer's Guild receptionist and a
+first forest gathering job with a goblin encounter. The author rewrites the
+sample story and replaces the art, places and palette for each new game.
 
 ## Engine and story content
 
 Keep the boundary between implementation and content clear:
 
 - `src/engine/` contains the reusable runtime, story-file reader and validator,
-  types, storage, localization, screens and bundled interface icons. Do not put
-  narrative content here.
+  types, storage, localization, screens, combat and bundled interface icons.
+  Do not put narrative content here.
 - `src/story/` contains author-editable content: JSON character profiles and
-  chapters, optional location files, local assets, `theme.css`, and `story.json`.
+  chapters, optional location and enemy files, local assets, `theme.css`, and
+  `story.json`. `assets/system/` holds default engine-facing story assets;
+  `assets/misc/` is for generic story artwork.
   `STORY_GUIDE.md` documents the JSON format; keep it aligned with
   `src/engine/story.ts` when the format changes. `src/story/README.md` links to
   that guide.
@@ -30,17 +34,14 @@ Keep the boundary between implementation and content clear:
   remain local-only and must not upload story files.
 - Story files are discovered automatically. A character is a folder in
   `src/story/characters/` with a matching profile file; a place is a JSON file
-  in `src/story/locations/`. There is no registration list.
+  in `src/story/locations/`; enemies live in an `enemies/` folder beside their
+  location. There is no registration list.
 - Keep saves local. Do not add a server, account, analytics, tracking, or remote
   asset dependency.
 
-The shipped `src/story/characters/tutorial/` is a reusable in-game guide. Keep
-it unless the user asks otherwise. Its sample unlock step currently targets Mai;
-retarget that content when replacing Mai.
-
-Mai is a sample and engine test fixture; keep her to five chapters unless the
-user requests a narrative continuation. Tutorial demonstrates chat unlocking;
-Places-only behavior belongs in `src/story/locations/`.
+The shipped Tutorial is a reusable in-game guide. It walks through name/class
+selection, a seven-day training camp, starting equipment, and unlocks the
+Adventurer's Guild receptionist chat.
 
 ## Tracking
 
@@ -81,8 +82,7 @@ Before calling a page, engine change, or story change complete:
    reachable content, and usable touch targets.
 4. Check the browser console for errors on changed pages.
 5. When story structure changes, play one representative pass through each
-   affected chat or branch. Use Mai's five-chapter route for feature smoke tests;
-   use broader simulation when a structural change warrants it.
+   affected chat or branch.
 
 ## Code rules
 

@@ -1,0 +1,18 @@
+{
+  "name": "Guild Receptionist",
+  "color": "#2563eb",
+  "initial": "G",
+  "teaser": "Registers new adventurers.",
+  "unlocked": false,
+  "trust": 0,
+  "friendship": 0,
+  "type": "Fighter",
+  "mainstat": "strength",
+  "health": 40,
+  "defense": 5,
+  "strength": 5,
+  "agility": 3,
+  "intelligence": 4,
+  "cunning": 2,
+  "order": 2
+}

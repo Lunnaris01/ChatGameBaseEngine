@@ -1,11 +1,12 @@
 # ChatGameBaseEngine
 
-WhatsApp-style game engine for storytelling games.
+Web-first fantasy story-game engine and authoring starter.
 
-A phone-width, messenger-style story game built with Bun, Vite, Tailwind CSS v4,
-and strict TypeScript. The runtime is reusable; each game's content is JSON and
-local assets under `src/story/`. Progress stays in browser storage. There is no
-backend, account system, analytics, tracking, or remote asset dependency.
+A phone-width fantasy story game with a phone-style Home launcher,
+built with Bun, Vite, Tailwind CSS v4, and strict TypeScript. The runtime is
+reusable; each game's content is JSON and local assets under `src/story/`.
+Progress and the player wallet stay in browser storage. There is no backend,
+account system, analytics, tracking, or remote asset dependency.
 
 ## Run and validate
 
@@ -25,7 +26,8 @@ isolated phone tab. The browser cannot write files back into the source folder.
 ## Write only a story
 
 Read [`STORY_GUIDE.md`](STORY_GUIDE.md) for the complete content format and
-examples. In short:
+examples. If you have an existing story from an earlier engine version, see
+[`Upgrade.md`](Upgrade.md) for the copy-and-validate migration steps. In short:
 
 1. Edit `src/story/story.json` for title, description, language, and UI labels.
 2. Add `characters/<id>/<id>.json` for a profile and `chapterN.json` for each
@@ -35,9 +37,7 @@ examples. In short:
    `src/story/theme.css`.
 5. Run `bun run check`, open Story Studio or the game, and play important paths.
 
-The bundled Tutorial is a reusable guide and unlocks Mai's five-chapter romance
-ministory. Tutorial and Mai are the only character definitions. The Teahouse
-and Riverside Garden include in-person scenes with unlockable follow-ups.
+The bundled Tutorial guides character creation and unlocks an Adventurer's Guild receptionist chat and a forest location with a goblin encounter.
 
 When replacing Mai, also update or remove the Tutorial's `unlock` step so it
 targets the first character in your story.
@@ -47,13 +47,15 @@ targets the first character in your story.
 | Path | Purpose |
 | --- | --- |
 | `src/engine/` | Runtime, discovery, format parser, storage, localization, and UI |
-| `src/story/` | Character and place content, local art/audio, metadata, palette |
+| `src/engine/assets/` | Bundled UI icons and the local Home wallpaper |
+| `src/story/` | Character and place content, local art/audio, system/misc assets, metadata, palette |
 | `src/public/` | PWA manifest, icon, and same-origin service worker |
 | `src/studio.html` | Local story editing, validation, route outline, and preview |
 | `STORY_GUIDE.md` | Story-only development guide with examples for all features |
+| `Upgrade.md` | Move an existing story into the current engine |
 | `scripts/check-story.ts` | CLI story validation and content diagnostics |
 | `scripts/precache.ts` | Builds the production offline asset list |
-| `tests/` | Parser, storage, localization, pacing, and runner-gate tests |
+| `tests/` | Parser, storage, localization, economy, minigame, and runner tests |
 | `.github/workflows/check.yml` | CI typecheck, story check, tests, and build |
 | `dist/` | Generated production output; never edit by hand |
 

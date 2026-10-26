@@ -4,15 +4,39 @@
 // in src/story/ (see src/story/README.md). src/engine/story.ts translates
 // that JSON into the engine objects defined here.
 
-export type Stat = "trust" | "feelings" | "attraction" | "bond";
+export type Stat = "trust" | "friendship";
 export type Stats = Record<Stat, number>;
 
 /** The one place stat names are defined; used by the engine and the validator. */
-export const STAT_NAMES: Stat[] = ["trust", "feelings", "attraction", "bond"];
-export const STAT_MAX = 20;
-export const STAT_START: Stats = { trust: 2, feelings: 2, attraction: 2, bond: 2 };
+export const STAT_NAMES: Stat[] = ["trust", "friendship"];
+export const STAT_MAX = 50;
+export const STAT_MIN = -50;
+export const STAT_START: Stats = { trust: 0, friendship: 0 };
 
 export const isStat = (key: string): key is Stat => (STAT_NAMES as string[]).includes(key);
+
+// Character (combat) types and main stat mapping.
+export type CharacterType = "Fighter" | "Assassin" | "Archer" | "Mage";
+export const CHARACTER_TYPES: CharacterType[] = ["Fighter", "Assassin", "Archer", "Mage"];
+export type CombatStatName = "strength" | "agility" | "intelligence" | "defense" | "health" | "cunning";
+export const COMBAT_STAT_NAMES: CombatStatName[] = ["health", "defense", "strength", "agility", "intelligence", "cunning"];
+export type CombatStats = Record<CombatStatName, number>;
+
+export const DEFAULT_COMBAT_STATS: CombatStats = {
+  health: 50,
+  defense: 0,
+  strength: 0,
+  agility: 0,
+  intelligence: 0,
+  cunning: 0,
+};
+
+/** Maps a character type to the combat stat it uses as its main stat. */
+export function mainStatForType(type: CharacterType): CombatStatName {
+  if (type === "Fighter") return "strength";
+  if (type === "Mage") return "intelligence";
+  return "agility"; // Assassin, Archer
+}
 
 // Facts on a profile that stay hidden until the story reveals them: `age` and
 // `birthday` (one fact each), or a single entry of `interests` / `likes` /
@@ -38,7 +62,7 @@ type StepBody =
   | { t: "divider"; text: string; at?: number; style: "divider" | "fade" }
   | {
       t: "msg";
-      from: "them" | "me" | "sys";
+      from: "them" | "me" | "sys" | "thought" | "narrator";
       text: string;
       typing?: number;
       pause?: number;
@@ -48,6 +72,8 @@ type StepBody =
       /** Story-clock time in minutes since midnight; the clock the story sets. */
       at?: number;
     }
+  | { t: "thought"; text: string; typing?: number; pause?: number; duration?: number; at?: number }
+  | { t: "narrate"; text: string; typing?: number; pause?: number; duration?: number; at?: number }
   | { t: "choice"; opts: ChoiceOpt[] }
   | { t: "milestone"; id: string }
   | { t: "ask"; key: string; placeholder: string; effects?: Partial<Stats> }
@@ -89,7 +115,9 @@ type StepBody =
   | { t: "wait"; time: number }
   /** Plays one sound on its own: a file name in assets/sounds/, or a built-in voice. */
   | { t: "sound"; sound: string }
-  | { t: "quiz"; id: string; questions: QuizQ[]; pass: Step[] };
+  | { t: "quiz"; id: string; questions: QuizQ[]; pass: Step[] }
+  | { t: "autosave" }
+  | { t: "combat"; enemy: string; onWin?: Step[]; onLose?: Step[] };
 
 /** Matches one validated remembered-value condition. Missing keys match `not`/`none`. */
 export function matchesIfCondition(
@@ -105,7 +133,7 @@ export function matchesIfCondition(
 }
 
 export type Item = {
-  from: "them" | "me" | "sys";
+  from: "them" | "me" | "sys" | "thought" | "narrator";
   text: string;
   /** The story time on this bubble, e.g. "18:12" — never the phone's clock. */
   time?: string;
@@ -141,6 +169,12 @@ export type ContactData = {
   initial: string;
   unlocked: boolean;
   stats: Stats;
+  /** Character combat stats. */
+  combat?: CombatStats;
+  /** Character type. */
+  type?: CharacterType;
+  /** Main combat stat name. */
+  mainstat?: CombatStatName;
   /** The story clock, in minutes since midnight; the next bubble's time. */
   clock?: number;
   /** Unspent message-length units toward the next story-clock minute (0–49). */
@@ -161,6 +195,12 @@ export type Contact = {
   startUnlocked: boolean;
   /** Dev-only character: hidden from the chat list unless Dev mode is on. */
   dev: boolean;
+  /** Character type for combat. */
+  type?: CharacterType;
+  /** Main combat stat. */
+  mainstat?: CombatStatName;
+  /** Character combat stats. */
+  combat?: CombatStats;
   data: ContactData;
 };
 
@@ -176,6 +216,8 @@ export type PlaceChatData = {
   stats: Stats;
   unlocked: boolean;
   done: boolean;
+  /** Whether this scene has been entered before, so its cost is only charged once. */
+  visited?: boolean;
   /** The story clock, in minutes since midnight; the next bubble's time. */
   clock?: number;
   /** Unspent message-length units toward the next story-clock minute (0–49). */
@@ -210,6 +252,18 @@ export type Place = {
   dev: boolean;
 };
 
+/** Enemy definition for combat. */
+export type Enemy = {
+  id: string;
+  name: string;
+  health: number;
+  defense: number;
+  attack: number;
+  mainstat: number;
+  type?: CharacterType;
+  description?: string;
+};
+
 /** One picture in a gallery folder, revealed or still a placeholder. */
 export type GalleryImage = {
   name: string;
@@ -241,4 +295,29 @@ export type Cast = {
   assets: Record<string, string>;
   /** Gallery folders, including pictures that have not been revealed yet. */
   gallery: GalleryCategory[];
+  /** Enemies keyed by id. */
+  enemies: Record<string, Enemy>;
+};
+
+/** Equipment slots for the player character. */
+export type EquipmentSlot = "leftHand" | "rightHand" | "upperArmor" | "lowerArmor" | "boots";
+export type EquipmentItem = { name: string; attack?: number; defense?: number };
+
+export type PlayerInventory = {
+  leftHand?: EquipmentItem;
+  rightHand?: EquipmentItem;
+  upperArmor?: EquipmentItem;
+  lowerArmor?: EquipmentItem;
+  boots?: EquipmentItem;
+  gold: number;
+  potions: number;
+};
+
+export type PlayerCharacter = {
+  name: string;
+  rank: string;
+  type: CharacterType;
+  mainstat: CombatStatName;
+  combat: CombatStats;
+  inventory: PlayerInventory;
 };
